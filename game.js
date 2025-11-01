@@ -485,18 +485,7 @@ class DarkFarmGame {
     // остаются БЕЗ ИЗМЕНЕНИЙ из вашего исходного кода
     
     // Инициализация игры
-    let game;
-    window.onload = function() {
-        game = new DarkFarmGame();
-        
-        document.getElementById('shopToggle').addEventListener('click', () => {
-            game.toggleShop();
-        });
-        
-        document.getElementById('inventoryToggle').addEventListener('click', () => {
-            game.toggleInventory();
-        });
-    };
+
     // Метод для генерации случайного количества семян
     getRandomSeedDrop(seedType) {
         const seedData = this.seedTypes[seedType];
@@ -877,6 +866,18 @@ class DarkFarmGame {
             inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
         }
     }
+let game;
+window.onload = function() {
+    game = new DarkFarmGame();
+    
+    document.getElementById('shopToggle').addEventListener('click', () => {
+        game.toggleShop();
+    });
+    
+    document.getElementById('inventoryToggle').addEventListener('click', () => {
+        game.toggleInventory();
+    });
+};
 // Обработчики для модального окна (добавьте в самый конец файла, после класса)
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('authModal');
@@ -896,5 +897,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
