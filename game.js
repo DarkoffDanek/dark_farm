@@ -866,6 +866,7 @@ class DarkFarmGame {
             inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
         }
     }
+}
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
@@ -897,6 +898,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
