@@ -179,6 +179,10 @@ class DarkFarmGame {
             if (e.key === 'Enter') this.register();
         });
         this.checkAuthState();
+        setTimeout(() => {
+            console.log("Firebase Config:", this.firebaseConfig);
+            console.log("Firebase Auth:", this.auth);
+        }, 1000);
     }
     initFirebase() {
         if (typeof firebase !== 'undefined') {
@@ -892,6 +896,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
