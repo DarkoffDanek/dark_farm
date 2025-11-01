@@ -206,14 +206,14 @@ class DarkFarmGame {
         }
     }
 
-    initShop() {
+        initShop() {
         const shopItems = document.getElementById('shopItems');
         shopItems.innerHTML = '';
         
-        // Добавляем обмен валюты
+        // Обмен валюты
         const exchangeShopItem = document.createElement('div');
         exchangeShopItem.className = 'shop-item exchange-shop-item';
-        const canExchange = this.souls >= this.exchangeAmount;
+        const canExchange = this.souls >= this.exchangeAmount; // Условие: достаточно душ
         
         exchangeShopItem.innerHTML = `
             <div class="item-emoji">💱</div>
@@ -228,10 +228,10 @@ class DarkFarmGame {
         `;
         shopItems.appendChild(exchangeShopItem);
         
-        // Добавляем возможность покупки грядок
+        // Покупка грядки
         const plotShopItem = document.createElement('div');
         plotShopItem.className = 'shop-item plot-shop-item';
-        const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots;
+        const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots; // Условие: достаточно душ И меньше 30 грядок
         
         plotShopItem.innerHTML = `
             <div class="item-emoji">🟫</div>
@@ -239,7 +239,7 @@ class DarkFarmGame {
             <div class="item-price">Цена: ${this.plotPrice} душ</div>
             <div class="item-growth">Грядок: ${this.plots.length}/${this.maxPlots}</div>
             <div class="item-description">Увеличьте площадь вашей фермы</div>
-            <button class="buy-btn" onclick="game.buyPlot()"  
+            <button class="buy-btn" onclick="game.buyPlot()" 
                     ${!canBuyPlot ? 'disabled' : ''}>
                 ${this.plots.length >= this.maxPlots ? 'Максимум' : 'Купить грядку'}
             </button>
@@ -392,6 +392,7 @@ class DarkFarmGame {
             
             this.updateDisplay();
             this.updateInventoryDisplay();
+            this.initShop();
         }
     }
 
@@ -500,7 +501,17 @@ class DarkFarmGame {
             inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
         }
     }
-
+    sellHarvest(seedType) {
+    if (this.harvestInventory[seedType] > 0) {
+        const seedData = this.seedTypes[seedType];
+        this.souls += seedData.baseSellPrice;
+        this.harvestInventory[seedType]--;
+        
+        this.updateDisplay();
+        this.updateInventoryDisplay();
+        this.initShop(); // ДОБАВЬТЕ ЭТУ СТРОКУ
+        }
+    }
     updateDisplay() {
         document.getElementById('souls').textContent = `Души: ${this.souls}`;
         document.getElementById('darkEssence').textContent = `Тёмная эссенция: ${this.darkEssence}`;
@@ -570,9 +581,12 @@ class DarkFarmGame {
         this.shopOpen = !this.shopOpen;
         const shop = document.getElementById('shop');
         shop.classList.toggle('hidden', !this.shopOpen);
-        
+        if (this.shopOpen) {
+            this.initShop(); // ДОБАВЬТЕ ЭТУ СТРОКУ - обновляем магазин при открытии
+        }
         if (this.shopOpen && this.inventoryOpen) {
             this.toggleInventory();
+            
         }
     }
 
@@ -676,4 +690,5 @@ window.onload = function() {
     document.getElementById('inventoryToggle').addEventListener('click', () => {
         game.toggleInventory();
     });
+
 };
