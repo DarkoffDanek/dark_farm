@@ -121,6 +121,12 @@ class DarkFarmGame {
         this.auth = null;
         
         this.initFirebase();
+        setTimeout(() => {
+            if (!this.auth) {
+                console.warn("Firebase Auth все еще не инициализирован, пробуем снова...");
+                this.initFirebase();
+            }
+        }, 2000);
     }
 
     // ========== СИСТЕМА АККАУНТОВ ==========
@@ -128,20 +134,45 @@ class DarkFarmGame {
         
     
     checkAuthState() {
-        if (this.auth) {
-            console.log("Подписываемся на изменения состояния аутентификации...");
-            this.auth.onAuthStateChanged((user) => {
-                console.log("Состояние аутентификации изменилось:", user);
-                if (user) {
-                    this.currentUser = user;
-                    document.getElementById('authButton').textContent = `🚪 ${user.email}`;
-                    this.loadGameFromCloud();
-                } else {
-                    console.log("Пользователь не авторизован");
-                }
-            });
-        } else {
-            console.log("Firebase Auth не инициализирован");
+        if (!this.auth) {
+            console.error("Firebase Auth не инициализирован!");
+            return;
+        }
+        
+        console.log("Подписываемся на изменения состояния аутентификации...");
+        
+        this.auth.onAuthStateChanged((user) => {
+            console.log("Изменение состояния аутентификации:", user);
+            
+            if (user) {
+                console.log("Пользователь вошел:", user.email);
+                this.currentUser = user;
+                document.getElementById('authButton').textContent = `🚪 ${user.email}`;
+                this.loadGameFromCloud();
+                
+                // Показываем уведомление о успешном входе
+                this.showAuthStatus("Успешный вход!", "success");
+            } else {
+                console.log("Пользователь вышел");
+                this.currentUser = null;
+                document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
+                this.stopAutoSave();
+                this.resetGame();
+            }
+        }, (error) => {
+            console.error("Ошибка в onAuthStateChanged:", error);
+        });
+    }
+    showAuthStatus(message, type = "error") {
+        const status = document.getElementById('authStatus');
+        status.textContent = message;
+        status.className = `auth-status ${type}`;
+        
+        if (type === "success") {
+            setTimeout(() => {
+                status.textContent = '';
+                status.className = 'auth-status';
+            }, 3000);
         }
     }
     setupAuthModal() {
@@ -190,10 +221,34 @@ class DarkFarmGame {
         }, 1000);
     }
     initFirebase() {
-        if (typeof firebase !== 'undefined') {
-            this.firebaseApp = firebase.initializeApp(this.firebaseConfig);
+        try {
+            console.log("Инициализация Firebase...");
+            
+            if (typeof firebase === 'undefined') {
+                console.error("Firebase не загружен!");
+                return;
+            }
+    
+            // Проверяем, не инициализирован ли уже Firebase
+            if (!firebase.apps.length) {
+                this.firebaseApp = firebase.initializeApp(this.firebaseConfig);
+                console.log("Firebase app инициализирован:", this.firebaseApp);
+            } else {
+                this.firebaseApp = firebase.app();
+                console.log("Используем существующий Firebase app");
+            }
+    
             this.db = firebase.firestore();
             this.auth = firebase.auth();
+            
+            console.log("Firebase Auth инициализирован:", this.auth);
+            console.log("Firebase Firestore инициализирован:", this.db);
+            
+            // Теперь подписываемся на изменения аутентификации
+            this.checkAuthState();
+            
+        } catch (error) {
+            console.error("Ошибка инициализации Firebase:", error);
         }
     }
 
@@ -219,13 +274,21 @@ class DarkFarmGame {
         const password = document.getElementById('loginPassword').value;
         const status = document.getElementById('authStatus');
         
+        console.log("Попытка входа:", email);
+        
+        if (!this.auth) {
+            this.showAuthStatus("Ошибка: Firebase не инициализирован");
+            return;
+        }
+        
         try {
-            await this.auth.signInWithEmailAndPassword(email, password);
+            const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
+            console.log("Вход успешен:", userCredential.user);
             this.hideAuthModal();
             status.textContent = '';
         } catch (error) {
-            status.textContent = 'Ошибка входа: ' + error.message;
-            status.className = 'auth-status error';
+            console.error("Ошибка входа:", error);
+            this.showAuthStatus('Ошибка входа: ' + error.message);
         }
     }
     
@@ -234,29 +297,39 @@ class DarkFarmGame {
         const password = document.getElementById('registerPassword').value;
         const confirm = document.getElementById('registerConfirm').value;
         const status = document.getElementById('authStatus');
-        if (!email || !password || !confirm) {
-            status.textContent = 'Заполните все поля!';
-            status.className = 'auth-status error';
+        
+        console.log("Попытка регистрации:", email);
+        
+        if (!this.auth) {
+            this.showAuthStatus("Ошибка: Firebase не инициализирован");
             return;
         }
-
+        
+        if (!email || !password || !confirm) {
+            this.showAuthStatus('Заполните все поля!');
+            return;
+        }
+    
         if (password !== confirm) {
-            status.textContent = 'Пароли не совпадают!';
-            status.className = 'auth-status error';
+            this.showAuthStatus('Пароли не совпадают!');
             return;
         }
     
         try {
-            await this.auth.createUserWithEmailAndPassword(email, password);
+            const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
+            console.log("Регистрация успешна:", userCredential.user);
+            
+            // Создаем данные для нового пользователя
             await this.createNewUserData();
+            
             this.hideAuthModal();
             status.textContent = '';
+            
         } catch (error) {
-            status.textContent = 'Ошибка регистрации: ' + error.message;
-            status.className = 'auth-status error';
+            console.error("Ошибка регистрации:", error);
+            this.showAuthStatus('Ошибка регистрации: ' + error.message);
         }
     }
-    
 
         // Показываем форму входа
 
@@ -901,6 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
