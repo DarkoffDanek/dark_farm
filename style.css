@@ -640,3 +640,123 @@ h1, h3 {
     background: linear-gradient(135deg, #3a6a3a, #5b8c5b);
     border-color: #5b8c5b;
 }
+/* Стили для модального окна */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #16213e;
+    border: 2px solid #394867;
+    border-radius: 10px;
+    padding: 25px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.close {
+    position: absolute;
+    right: 15px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #e94560;
+    transition: color 0.3s;
+}
+
+.close:hover {
+    color: #ff6b95;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: #0f3460;
+    border: 1px solid #394867;
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.auth-input::placeholder {
+    color: #a9a9a9;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: #5d3891;
+}
+
+.auth-submit {
+    width: 100%;
+    padding: 12px;
+    margin: 15px 0 10px 0;
+    background: #5d3891;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.auth-submit:hover {
+    background: #6d4891;
+}
+
+.auth-switch {
+    width: 100%;
+    background: none;
+    border: none;
+    color: #e94560;
+    cursor: pointer;
+    margin: 10px 0;
+    text-decoration: underline;
+    font-size: 14px;
+}
+
+.auth-switch:hover {
+    color: #ff6b95;
+}
+
+.auth-status {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.auth-status.success {
+    background: #2d5a2d;
+    color: #c9c9c9;
+    border: 1px solid #4a7c4a;
+}
+
+.auth-status.error {
+    background: #5a2d2d;
+    color: #c9c9c9;
+    border: 1px solid #e94560;
+}
+
+.auth-btn {
+    background: linear-gradient(135deg, #394867, #4a5a7a) !important;
+    border: 1px solid #5d3891 !important;
+}
