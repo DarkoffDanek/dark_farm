@@ -19,8 +19,7 @@
         <div class="controls">
             <button id="shopToggle" class="toggle-btn">🏪 Магазин Семян</button>
             <button id="inventoryToggle" class="toggle-btn">🎒 Инвентарь</button>
-            <button onclick="saveGame()" class="toggle-btn">💾 Сохранить</button>
-            <button onclick="loadGame()" class="toggle-btn">📂 Загрузить</button>
+            <button id="authButton" class="toggle-btn auth-btn">🔐 Войти в аккаунт</button>
         </div>
 
         <!-- Магазин -->
@@ -43,6 +42,31 @@
             <p>• Кликай на растения или жди пока вырастут</p>
             <p>• Собери урожай → продай в инвентаре за души</p>
             <p>• Чем дольше растёт семя - тем дороже урожай!</p>
+        </div>
+    </div>
+
+    <!-- Модальное окно авторизации -->
+    <div id="authModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>🔐 Аккаунт Тёмной Фермы</h3>
+            
+            <div id="loginForm">
+                <input type="text" id="loginUsername" placeholder="Имя пользователя" class="auth-input">
+                <input type="password" id="loginPassword" placeholder="Пароль" class="auth-input">
+                <button id="loginSubmit" class="auth-submit">Войти</button>
+                <button id="showRegister" class="auth-switch">Нет аккаунта? Зарегистрироваться</button>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <input type="text" id="registerUsername" placeholder="Имя пользователя" class="auth-input">
+                <input type="password" id="registerPassword" placeholder="Пароль" class="auth-input">
+                <input type="password" id="registerConfirm" placeholder="Подтвердите пароль" class="auth-input">
+                <button id="registerSubmit" class="auth-submit">Зарегистрироваться</button>
+                <button id="showLogin" class="auth-switch">Уже есть аккаунт? Войти</button>
+            </div>
+            
+            <div id="authStatus" class="auth-status"></div>
         </div>
     </div>
 
