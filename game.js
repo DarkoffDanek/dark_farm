@@ -108,12 +108,12 @@ class DarkFarmGame {
         this.updateInventoryDisplay();
         this.renderFarm();
         this.firebaseConfig = {
-            apiKey: "your_api_key",
-            authDomain: "your_project_id.firebaseapp.com",
-            projectId: "your_project_id",
-            storageBucket: "your_project_id.appspot.com",
-            messagingSenderId: "your_sender_id",
-            appId: "your_app_id"
+            apiKey: "AIzaSyCNBY7csQIsnE_EujafSPyAr-pvMxUq81w",
+            authDomain: "dark-farm-game.firebaseapp.com",
+            projectId: "dark-farm-game",
+            storageBucket: "dark-farm-game.firebasestorage.app",
+            messagingSenderId: "438535642043",
+            appId: "1:438535642043:web:cef80bcf756208073b829e"
         };
         
         this.firebaseApp = null;
@@ -892,6 +892,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
