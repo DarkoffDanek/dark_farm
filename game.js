@@ -124,7 +124,6 @@ class DarkFarmGame {
     }
 
     // ========== СИСТЕМА АККАУНТОВ ==========
-    // Firebase configuration - ДОБАВИТЬ ЭТОТ БЛОК
 
     
 
@@ -342,20 +341,20 @@ class DarkFarmGame {
     }
     
     async createNewUserData() {
+        this.plots = [];
+        for (let i = 0; i < this.initialPlots; i++) {
+            this.addNewPlot();
+        }
+        
+        // Затем создаем gameData:
         const gameData = {
             souls: 0,
             darkEssence: 100,
             seedsInventory: {},
             harvestInventory: {},
-            plots: [],
+            plots: this.plots,  // Теперь plots будет содержать грядки
             lastUpdate: Date.now()
         };
-        
-        // Создайте начальные грядки
-        for (let i = 0; i < this.initialPlots; i++) {
-            this.addNewPlot();
-        }
-        gameData.plots = this.plots;
         
         await this.saveGameToCloud();
     }
@@ -893,6 +892,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
