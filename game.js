@@ -103,7 +103,6 @@ class DarkFarmGame {
         this.inventoryOpen = false;
         
         this.setupAuthModal();
-        this.setupAuthModal();
         this.startGameLoop();
         this.initShop();
         this.updateInventoryDisplay();
@@ -111,14 +110,7 @@ class DarkFarmGame {
     }
 
     // ========== СИСТЕМА АККАУНТОВ ==========
-    this.firebaseConfig = {
-        apiKey: "your_api_key",
-        authDomain: "your_project_id.firebaseapp.com",
-        projectId: "your_project_id",
-        storageBucket: "your_project_id.appspot.com",
-        messagingSenderId: "your_sender_id",
-        appId: "your_app_id"
-    };
+
     
     this.firebaseApp = null;
     this.db = null;
@@ -178,6 +170,7 @@ class DarkFarmGame {
         document.getElementById('registerPassword').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.register();
         });
+        this.checkAuthState();
     }
     initFirebase() {
         if (typeof firebase !== 'undefined') {
@@ -222,36 +215,41 @@ class DarkFarmGame {
     async register() {
         const email = document.getElementById('registerUsername').value.trim();
         const password = document.getElementById('registerPassword').value;
-        
+        const confirm = document.getElementById('registerConfirm').value;
+        const status = document.getElementById('authStatus');
+    
+        if (password !== confirm) {
+            status.textContent = 'Пароли не совпадают!';
+            status.className = 'auth-status error';
+            return;
+        }
+    
         try {
             await this.auth.createUserWithEmailAndPassword(email, password);
-            await this.createNewUserData(); // Создать начальные данные
+            await this.createNewUserData();
             this.hideAuthModal();
+            status.textContent = '';
         } catch (error) {
-            // обработка ошибок
+            status.textContent = 'Ошибка регистрации: ' + error.message;
+            status.className = 'auth-status error';
         }
     }
     
 
         // Показываем форму входа
-        setTimeout(() => {
-            document.getElementById('registerForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
-        }, 1500);
+
+
+
+    async logout() {
+        await this.saveGameToCloud();
+        if (this.auth) {
+            await this.auth.signOut();
+        }
+        this.currentUser = null;
+        document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
+        this.stopAutoSave();
+        this.resetGame();
     }
-
-
-
-async logout() {
-    await this.saveGameToCloud();
-    if (this.auth) {
-        await this.auth.signOut();
-    }
-    this.currentUser = null;
-    document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
-    this.stopAutoSave();
-    this.resetGame();
-}
     async saveGameToCloud() {
         if (!this.currentUser) return;
         
@@ -878,3 +876,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
