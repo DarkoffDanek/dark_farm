@@ -110,7 +110,15 @@ class DarkFarmGame {
     }
 
     // ========== СИСТЕМА АККАУНТОВ ==========
-
+    // Firebase configuration - ДОБАВИТЬ ЭТОТ БЛОК
+    this.firebaseConfig = {
+        apiKey: "your_api_key",
+        authDomain: "your_project_id.firebaseapp.com",
+        projectId: "your_project_id",
+        storageBucket: "your_project_id.appspot.com",
+        messagingSenderId: "your_sender_id",
+        appId: "your_app_id"
+    };
     
     this.firebaseApp = null;
     this.db = null;
@@ -217,7 +225,12 @@ class DarkFarmGame {
         const password = document.getElementById('registerPassword').value;
         const confirm = document.getElementById('registerConfirm').value;
         const status = document.getElementById('authStatus');
-    
+        if (!email || !password || !confirm) {
+            status.textContent = 'Заполните все поля!';
+            status.className = 'auth-status error';
+            return;
+        }
+
         if (password !== confirm) {
             status.textContent = 'Пароли не совпадают!';
             status.className = 'auth-status error';
@@ -309,6 +322,7 @@ class DarkFarmGame {
         } catch (error) {
             console.error('Ошибка загрузки:', error);
         }
+        this.startAutoSave()
     }
         startAutoSave() {
             // Автосохранение каждые 30 секунд
@@ -876,4 +890,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
