@@ -197,13 +197,13 @@ body {
 
 /* Специальные типы товаров */
 .plot-shop-item {
-    background: linear-gradient(135deg, #5d3891, #8a52c9);
-    border: 2px solid #6d4891;
+    background: linear-gradient(135deg, #2d5a2d, #4a7c4a);
+    border: 2px solid #4a7c4a;
 }
 
 .exchange-shop-item {
-    background: linear-gradient(135deg, #e94560, #ff6b95);
-    border: 2px solid #e94560;
+    background: linear-gradient(135deg, #394867, #4a5a7a);
+    border: 2px solid #5d3891;
 }
 
 .seed-item {
@@ -629,4 +629,14 @@ h1, h3 {
         font-size: 1.1em;
         margin-bottom: 12px;
     }
+
+}
+.exchange-shop-item:hover {
+    background: linear-gradient(135deg, #4a5a7a, #5b6b8b);
+    border-color: #6d4891;
+}
+
+.plot-shop-item:hover {
+    background: linear-gradient(135deg, #3a6a3a, #5b8c5b);
+    border-color: #5b8c5b;
 }
