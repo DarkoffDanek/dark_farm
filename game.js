@@ -102,7 +102,7 @@ class DarkFarmGame {
         this.shopOpen = false;
         this.inventoryOpen = false;
         
-        this.initAuth();
+        this.setupAuthModal();
         this.setupAuthModal();
         this.startGameLoop();
         this.initShop();
@@ -126,15 +126,7 @@ class DarkFarmGame {
     
     this.initFirebase();
     
-    setupAuthModal() {
-        // Проверяем, есть ли сохраненная сессия
-        const savedSession = localStorage.getItem('darkFarmCurrentUser');
-        if (savedSession) {
-            this.currentUser = savedSession;
-            document.getElementById('authButton').textContent = `🚪 ${savedSession}`;
-            this.loadGameFromStorage();
-        this.checkAuthState();
-    }
+
     checkAuthState() {
         if (this.auth) {
             this.auth.onAuthStateChanged((user) => {
@@ -187,6 +179,14 @@ class DarkFarmGame {
             if (e.key === 'Enter') this.register();
         });
     }
+    initFirebase() {
+        if (typeof firebase !== 'undefined') {
+            this.firebaseApp = firebase.initializeApp(this.firebaseConfig);
+            this.db = firebase.firestore();
+            this.auth = firebase.auth();
+        }
+    }
+
 
     showAuthModal() {
         document.getElementById('authModal').classList.remove('hidden');
@@ -207,12 +207,15 @@ class DarkFarmGame {
     async login() {
         const email = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
+        const status = document.getElementById('authStatus');
         
         try {
             await this.auth.signInWithEmailAndPassword(email, password);
             this.hideAuthModal();
+            status.textContent = '';
         } catch (error) {
-            // обработка ошибок
+            status.textContent = 'Ошибка входа: ' + error.message;
+            status.className = 'auth-status error';
         }
     }
     
@@ -229,16 +232,6 @@ class DarkFarmGame {
         }
     }
     
-        // Создаем нового пользователя
-        users[username] = {
-            password: this.hashPassword(password),
-            createdAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('darkFarmUsers', JSON.stringify(users));
-
-        status.textContent = 'Регистрация успешна! Теперь войдите.';
-        status.className = 'auth-status success';
 
         // Показываем форму входа
         setTimeout(() => {
@@ -247,39 +240,18 @@ class DarkFarmGame {
         }, 1500);
     }
 
-    hashPassword(password) {
-        // Простое хеширование для демонстрации (в реальном приложении используйте более безопасные методы)
-        let hash = 0;
-        for (let i = 0; i < password.length; i++) {
-            const char = password.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return hash.toString();
-    }
 
-    logout() {
-        this.saveGameToCloud();
-        this.currentUser = null;
-        localStorage.removeItem('darkFarmCurrentUser');
-        document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
-        this.stopAutoSave();
-        
-        // Сбрасываем игру к начальным значениям
-        this.souls = 0;
-        this.darkEssence = 100;
-        this.seedsInventory = {};
-        this.harvestInventory = {};
-        this.plots = [];
-        for (let i = 0; i < this.initialPlots; i++) {
-            this.addNewPlot();
-        }
-        
-        this.updateDisplay();
-        this.initShop();
-        this.updateInventoryDisplay();
-        this.renderFarm();
+
+async logout() {
+    await this.saveGameToCloud();
+    if (this.auth) {
+        await this.auth.signOut();
     }
+    this.currentUser = null;
+    document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
+    this.stopAutoSave();
+    this.resetGame();
+}
     async saveGameToCloud() {
         if (!this.currentUser) return;
         
@@ -301,7 +273,20 @@ class DarkFarmGame {
             console.error('Ошибка сохранения:', error);
         }
     }
-
+    resetGame() {
+        this.souls = 0;
+        this.darkEssence = 100;
+        this.seedsInventory = {};
+        this.harvestInventory = {};
+        this.plots = [];
+        for (let i = 0; i < this.initialPlots; i++) {
+            this.addNewPlot();
+        }
+        this.updateDisplay();
+        this.initShop();
+        this.updateInventoryDisplay();
+        this.renderFarm();
+    }
     async loadGameFromCloud() {
         if (!this.currentUser) return;
         
@@ -893,10 +878,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-initFirebase() {
-    if (typeof firebase !== 'undefined') {
-        this.firebaseApp = firebase.initializeApp(this.firebaseConfig);
-        this.db = firebase.firestore();
-        this.auth = firebase.auth();
-    }
-}
