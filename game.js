@@ -478,13 +478,7 @@ class DarkFarmGame {
             alert('Достигнут максимум грядок!');
         }
         return false;
-    }    
-
-    // ... остальные методы игры (getRandomSeedDrop, addNewPlot, renderFarm, handlePlotClick, 
-    // initShop, clickCrop, growCrops, updateDisplay, toggleShop, toggleInventory, startGameLoop)
-    // остаются БЕЗ ИЗМЕНЕНИЙ из вашего исходного кода
-    
-    // Инициализация игры
+    }
 
     // Метод для генерации случайного количества семян
     getRandomSeedDrop(seedType) {
@@ -867,6 +861,7 @@ class DarkFarmGame {
         }
     }
 }
+
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
@@ -879,6 +874,7 @@ window.onload = function() {
         game.toggleInventory();
     });
 };
+
 // Обработчики для модального окна (добавьте в самый конец файла, после класса)
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('authModal');
@@ -898,7 +894,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
-
-
-
