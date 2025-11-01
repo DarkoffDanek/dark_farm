@@ -107,24 +107,25 @@ class DarkFarmGame {
         this.initShop();
         this.updateInventoryDisplay();
         this.renderFarm();
+        this.firebaseConfig = {
+            apiKey: "your_api_key",
+            authDomain: "your_project_id.firebaseapp.com",
+            projectId: "your_project_id",
+            storageBucket: "your_project_id.appspot.com",
+            messagingSenderId: "your_sender_id",
+            appId: "your_app_id"
+        };
+        
+        this.firebaseApp = null;
+        this.db = null;
+        this.auth = null;
+        
+        this.initFirebase();
     }
 
     // ========== СИСТЕМА АККАУНТОВ ==========
     // Firebase configuration - ДОБАВИТЬ ЭТОТ БЛОК
-    this.firebaseConfig = {
-        apiKey: "your_api_key",
-        authDomain: "your_project_id.firebaseapp.com",
-        projectId: "your_project_id",
-        storageBucket: "your_project_id.appspot.com",
-        messagingSenderId: "your_sender_id",
-        appId: "your_app_id"
-    };
-    
-    this.firebaseApp = null;
-    this.db = null;
-    this.auth = null;
-    
-    this.initFirebase();
+
     
 
     checkAuthState() {
@@ -314,29 +315,31 @@ class DarkFarmGame {
                 this.seedsInventory = gameData.seedsInventory || {};
                 this.harvestInventory = gameData.harvestInventory || {};
                 this.plots = gameData.plots || [];
-                
+
                 // Обновите интерфейс
                 this.renderFarm();
                 this.updateDisplay();
+                this.initShop();
+                this.updateInventoryDisplay();
             }
         } catch (error) {
             console.error('Ошибка загрузки:', error);
         }
-        this.startAutoSave()
+        this.startAutoSave();
     }
-        startAutoSave() {
+    startAutoSave() {
             // Автосохранение каждые 30 секунд
-            this.autoSaveInterval = setInterval(() => {
-                this.saveGameToCloud();
-            }, 30000);
+        this.autoSaveInterval = setInterval(() => {
+            this.saveGameToCloud();
+        }, 30000);
+    }
+
+    stopAutoSave() {
+        if (this.autoSaveInterval) {
+            clearInterval(this.autoSaveInterval);
+            this.autoSaveInterval = null;
         }
-    
-        stopAutoSave() {
-            if (this.autoSaveInterval) {
-                clearInterval(this.autoSaveInterval);
-                this.autoSaveInterval = null;
-            }
-        }
+    }
     
     async createNewUserData() {
         const gameData = {
@@ -890,5 +893,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
