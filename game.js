@@ -478,406 +478,405 @@ class DarkFarmGame {
             alert('Достигнут максимум грядок!');
         }
         return false;
-    }
+    }    
 
     // ... остальные методы игры (getRandomSeedDrop, addNewPlot, renderFarm, handlePlotClick, 
     // initShop, clickCrop, growCrops, updateDisplay, toggleShop, toggleInventory, startGameLoop)
     // остаются БЕЗ ИЗМЕНЕНИЙ из вашего исходного кода
-}
-
-// Инициализация игры
-let game;
-window.onload = function() {
-    game = new DarkFarmGame();
     
-    document.getElementById('shopToggle').addEventListener('click', () => {
-        game.toggleShop();
-    });
-    
-    document.getElementById('inventoryToggle').addEventListener('click', () => {
-        game.toggleInventory();
-    });
-};
-// Метод для генерации случайного количества семян
-getRandomSeedDrop(seedType) {
-    const seedData = this.seedTypes[seedType];
-    const dropChance = seedData.dropChance;
-    
-    if (Math.random() < dropChance) {
-        const randomValue = Math.random();
-        if (randomValue < 0.4) {
-            return 1;
-        } else if (randomValue < 0.7) {
-            return 2;
-        }
-    }
-    return 0;
-}
-
-// Метод для добавления новой грядки
-addNewPlot() {
-    if (this.plots.length < this.maxPlots) {
-        this.plots.push({
-            planted: false,
-            growth: 0,
-            clicks: 0,
-            type: null,
-            growthMethod: null,
-            plantTime: null,
-            totalGrowthTime: 0,
-            remainingTime: 0
-        });
-        return true;
-    }
-    return false;
-}
-
-// Метод для отображения фермы
-renderFarm() {
-    const farmArea = document.getElementById('farmArea');
-    farmArea.innerHTML = '';
-    
-    this.plots.forEach((plot, index) => {
-        const plotElement = document.createElement('div');
-        plotElement.className = 'plot';
-        plotElement.onclick = () => this.handlePlotClick(index);
-        plotElement.innerHTML = '🟫';
-        farmArea.appendChild(plotElement);
-    });
-    
-    this.updateDisplay();
-}
-
-// Обработчик клика по грядке
-handlePlotClick(plotIndex) {
-    const plot = this.plots[plotIndex];
-    if (plot.planted) {
-        if (plot.growth >= 100) {
-            this.harvest(plotIndex);
-        } else {
-            this.clickCrop(plotIndex);
-        }
-    } else {
-        const availableSeeds = Object.keys(this.seedsInventory).filter(seed => this.seedsInventory[seed] > 0);
-        if (availableSeeds.length > 0) {
-            const seedToPlant = availableSeeds[0];
-            this.plantSeed(plotIndex, seedToPlant);
-        } else {
-            alert('Нет семян в инвентаре! Купите в магазине.');
-        }
-    }
-}
-
-// Инициализация магазина
-initShop() {
-    const shopItems = document.getElementById('shopItems');
-    shopItems.innerHTML = '';
-    
-    // Обмен валюты
-    const exchangeShopItem = document.createElement('div');
-    exchangeShopItem.className = 'shop-item exchange-shop-item';
-    const canExchange = this.souls >= this.exchangeAmount;
-    
-    exchangeShopItem.innerHTML = `
-        <div class="item-emoji">💱</div>
-        <div class="item-name">Обмен валюты</div>
-        <div class="item-price">${this.exchangeAmount} душ → ${this.exchangeAmount * this.exchangeRate} эссенции</div>
-        <div class="item-growth">Курс: 1 душа = ${this.exchangeRate} эссенции</div>
-        <div class="item-description">Обменяйте души на эссенцию для покупки семян</div>
-        <button class="buy-btn" onclick="game.buyEssence()" 
-                ${!canExchange ? 'disabled' : ''}>
-            Обменять
-        </button>
-    `;
-    shopItems.appendChild(exchangeShopItem);
-    
-    // Покупка грядки
-    const plotShopItem = document.createElement('div');
-    plotShopItem.className = 'shop-item plot-shop-item';
-    const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots;
-    
-    plotShopItem.innerHTML = `
-        <div class="item-emoji">🟫</div>
-        <div class="item-name">Дополнительная грядка</div>
-        <div class="item-price">Цена: ${this.plotPrice} душ</div>
-        <div class="item-growth">Грядок: ${this.plots.length}/${this.maxPlots}</div>
-        <div class="item-description">Увеличьте площадь вашей фермы</div>
-        <button class="buy-btn" onclick="game.buyPlot()" 
-                ${!canBuyPlot ? 'disabled' : ''}>
-            ${this.plots.length >= this.maxPlots ? 'Максимум' : 'Купить грядку'}
-        </button>
-    `;
-    shopItems.appendChild(plotShopItem);
-    
-    // Семена
-    Object.entries(this.seedTypes).forEach(([seedType, seedData]) => {
-        const shopItem = document.createElement('div');
-        shopItem.className = `shop-item ${seedData.buyPrice > 100 ? 'expensive' : 'cheap'}`;
+    // Инициализация игры
+    let game;
+    window.onload = function() {
+        game = new DarkFarmGame();
         
-        shopItem.innerHTML = `
-            <div class="item-emoji">${seedData.emoji}</div>
-            <div class="item-name">${seedData.name}</div>
-            <div class="item-price">Цена: ${seedData.buyPrice} эссенции</div>
-            <div class="item-sell-price">Продажа урожая: ${seedData.baseSellPrice} душ</div>
-            <div class="item-growth">Рост: ${seedData.time/1000}сек | Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
-            <div class="item-description">${seedData.description}</div>
-            <button class="buy-btn" onclick="game.buySeed('${seedType}')" 
-                    ${this.darkEssence < seedData.buyPrice ? 'disabled' : ''}>
-                Купить семена
+        document.getElementById('shopToggle').addEventListener('click', () => {
+            game.toggleShop();
+        });
+        
+        document.getElementById('inventoryToggle').addEventListener('click', () => {
+            game.toggleInventory();
+        });
+    };
+    // Метод для генерации случайного количества семян
+    getRandomSeedDrop(seedType) {
+        const seedData = this.seedTypes[seedType];
+        const dropChance = seedData.dropChance;
+        
+        if (Math.random() < dropChance) {
+            const randomValue = Math.random();
+            if (randomValue < 0.4) {
+                return 1;
+            } else if (randomValue < 0.7) {
+                return 2;
+            }
+        }
+        return 0;
+    }
+    
+    // Метод для добавления новой грядки
+    addNewPlot() {
+        if (this.plots.length < this.maxPlots) {
+            this.plots.push({
+                planted: false,
+                growth: 0,
+                clicks: 0,
+                type: null,
+                growthMethod: null,
+                plantTime: null,
+                totalGrowthTime: 0,
+                remainingTime: 0
+            });
+            return true;
+        }
+        return false;
+    }
+    
+    // Метод для отображения фермы
+    renderFarm() {
+        const farmArea = document.getElementById('farmArea');
+        farmArea.innerHTML = '';
+        
+        this.plots.forEach((plot, index) => {
+            const plotElement = document.createElement('div');
+            plotElement.className = 'plot';
+            plotElement.onclick = () => this.handlePlotClick(index);
+            plotElement.innerHTML = '🟫';
+            farmArea.appendChild(plotElement);
+        });
+        
+        this.updateDisplay();
+    }
+    
+    // Обработчик клика по грядке
+    handlePlotClick(plotIndex) {
+        const plot = this.plots[plotIndex];
+        if (plot.planted) {
+            if (plot.growth >= 100) {
+                this.harvest(plotIndex);
+            } else {
+                this.clickCrop(plotIndex);
+            }
+        } else {
+            const availableSeeds = Object.keys(this.seedsInventory).filter(seed => this.seedsInventory[seed] > 0);
+            if (availableSeeds.length > 0) {
+                const seedToPlant = availableSeeds[0];
+                this.plantSeed(plotIndex, seedToPlant);
+            } else {
+                alert('Нет семян в инвентаре! Купите в магазине.');
+            }
+        }
+    }
+    
+    // Инициализация магазина
+    initShop() {
+        const shopItems = document.getElementById('shopItems');
+        shopItems.innerHTML = '';
+        
+        // Обмен валюты
+        const exchangeShopItem = document.createElement('div');
+        exchangeShopItem.className = 'shop-item exchange-shop-item';
+        const canExchange = this.souls >= this.exchangeAmount;
+        
+        exchangeShopItem.innerHTML = `
+            <div class="item-emoji">💱</div>
+            <div class="item-name">Обмен валюты</div>
+            <div class="item-price">${this.exchangeAmount} душ → ${this.exchangeAmount * this.exchangeRate} эссенции</div>
+            <div class="item-growth">Курс: 1 душа = ${this.exchangeRate} эссенции</div>
+            <div class="item-description">Обменяйте души на эссенцию для покупки семян</div>
+            <button class="buy-btn" onclick="game.buyEssence()" 
+                    ${!canExchange ? 'disabled' : ''}>
+                Обменять
             </button>
         `;
+        shopItems.appendChild(exchangeShopItem);
         
-        shopItems.appendChild(shopItem);
-    });
-}
-
-// Клик по растению для ускорения роста
-clickCrop(plotIndex) {
-    const plot = this.plots[plotIndex];
-    if (plot.planted && plot.growth < 100) {
-        plot.clicks++;
+        // Покупка грядки
+        const plotShopItem = document.createElement('div');
+        plotShopItem.className = 'shop-item plot-shop-item';
+        const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots;
         
-        if (plot.remainingTime > 3000) {
-            plot.remainingTime -= 3000;
-            
-            const progressFromTime = 100 - (plot.remainingTime / plot.totalGrowthTime * 100);
-            const progressFromClicks = (plot.clicks / this.seedTypes[plot.type].clicks) * 100;
-            
-            plot.growth = Math.max(progressFromTime, progressFromClicks);
-            
-            if (plot.growth > 100) plot.growth = 100;
-        } else {
-            plot.growth = 100;
-            plot.remainingTime = 0;
-        }
+        plotShopItem.innerHTML = `
+            <div class="item-emoji">🟫</div>
+            <div class="item-name">Дополнительная грядка</div>
+            <div class="item-price">Цена: ${this.plotPrice} душ</div>
+            <div class="item-growth">Грядок: ${this.plots.length}/${this.maxPlots}</div>
+            <div class="item-description">Увеличьте площадь вашей фермы</div>
+            <button class="buy-btn" onclick="game.buyPlot()" 
+                    ${!canBuyPlot ? 'disabled' : ''}>
+                ${this.plots.length >= this.maxPlots ? 'Максимум' : 'Купить грядку'}
+            </button>
+        `;
+        shopItems.appendChild(plotShopItem);
         
-        plot.plantTime = Date.now() - (plot.growth / 100) * plot.totalGrowthTime;
-        
-        const plotElement = document.querySelectorAll('.plot')[plotIndex];
-        plotElement.classList.add('clicked');
-        setTimeout(() => {
-            plotElement.classList.remove('clicked');
-        }, 300);
-        
-        this.updateDisplay();
-    }
-}
-
-// Рост растений со временем
-growCrops(deltaTime) {
-    this.plots.forEach(plot => {
-        if (plot.planted && plot.growth < 100) {
-            if (plot.growthMethod === null) {
-                plot.growthMethod = 'time';
-            }
+        // Семена
+        Object.entries(this.seedTypes).forEach(([seedType, seedData]) => {
+            const shopItem = document.createElement('div');
+            shopItem.className = `shop-item ${seedData.buyPrice > 100 ? 'expensive' : 'cheap'}`;
             
-            if (plot.growthMethod === 'time') {
-                plot.remainingTime = Math.max(0, plot.remainingTime - (deltaTime * 1000));
-                plot.growth = 100 - (plot.remainingTime / plot.totalGrowthTime * 100);
-                if (plot.growth > 100) plot.growth = 100;
-            }
-        }
-    });
-}
-
-// Обновление отображения
-updateDisplay() {
-    document.getElementById('souls').textContent = `Души: ${this.souls}`;
-    document.getElementById('darkEssence').textContent = `Тёмная эссенция: ${this.darkEssence}`;
-    
-    const plotElements = document.querySelectorAll('.plot');
-    this.plots.forEach((plot, index) => {
-        const plotElement = plotElements[index];
-        if (!plotElement) return;
-        
-        if (plot.planted) {
-            const seedData = this.seedTypes[plot.type];
-            
-            if (plot.growth >= 100) {
-                plotElement.textContent = seedData.emoji;
-                plotElement.style.background = '#4a2d5a';
-                plotElement.className = 'plot ready';
-                plotElement.title = `${seedData.name} - Готово к сбору! Кликни чтобы собрать (шанс семян: ${Math.round(seedData.dropChance * 100)}%)`;
-            } else {
-                const growthStage = Math.floor(plot.growth / 25);
-                const stages = ['🌱', '🪴', '🌿', seedData.emoji];
-                plotElement.textContent = stages[growthStage] || stages[0];
-                plotElement.style.background = '#2d5a2d';
-                plotElement.className = 'plot growing';
-                
-                const timeLeft = plot.remainingTime / 1000;
-                const clicksLeft = this.seedTypes[plot.type].clicks - plot.clicks;
-                plotElement.title = `${seedData.name} - ${Math.ceil(timeLeft)}сек осталось | Кликов: ${plot.clicks} | Кликай чтобы ускорить рост на 3 секунды!`;
-            }
-            
-            let progressContainer = plotElement.querySelector('.progress-container');
-            if (!progressContainer) {
-                progressContainer = document.createElement('div');
-                progressContainer.className = 'progress-container';
-                plotElement.appendChild(progressContainer);
-            }
-            
-            const timeLeft = Math.ceil(plot.remainingTime / 1000);
-            const clickEffect = plot.clicks > 0 ? ` | -${plot.clicks * 3}сек от кликов` : '';
-            
-            progressContainer.innerHTML = `
-                <div class="growth-info">
-                    ⏰ ${timeLeft}сек${clickEffect}
-                </div>
-                <div class="growth-progress">
-                    <div class="growth-progress-fill" style="width: ${plot.growth}%"></div>
-                </div>
-                <div class="click-info">
-                    👆 Кликай! Каждый клик ускоряет рост на 3 секунды
-                </div>
-            `;
-            
-        } else {
-            plotElement.textContent = '🟫';
-            plotElement.style.background = '#0f3460';
-            plotElement.className = 'plot';
-            plotElement.title = 'Пустой участок - кликни чтобы посадить семена';
-            
-            const progressContainer = plotElement.querySelector('.progress-container');
-            if (progressContainer) {
-                progressContainer.remove();
-            }
-        }
-    });
-}
-
-// Переключение видимости магазина
-toggleShop() {
-    this.shopOpen = !this.shopOpen;
-    const shop = document.getElementById('shop');
-    shop.classList.toggle('hidden', !this.shopOpen);
-    
-    if (this.shopOpen) {
-        this.initShop();
-    }
-    
-    if (this.shopOpen && this.inventoryOpen) {
-        this.toggleInventory();
-    }
-}
-
-// Переключение видимости инвентаря
-toggleInventory() {
-    this.inventoryOpen = !this.inventoryOpen;
-    const inventory = document.getElementById('inventory');
-    inventory.classList.toggle('hidden', !this.inventoryOpen);
-    
-    if (this.inventoryOpen && this.shopOpen) {
-        this.toggleShop();
-    }
-}
-
-// Игровой цикл
-startGameLoop() {
-    setInterval(() => {
-        const now = Date.now();
-        const deltaTime = (now - this.lastUpdate) / 1000;
-        this.lastUpdate = now;
-        
-        this.growCrops(deltaTime);
-        this.updateDisplay();
-    }, 100);
-}
-
-// Показ сообщения о выпадении семян
-showDropMessage(emoji, name, count) {
-    const message = document.createElement('div');
-    message.className = 'drop-message';
-    message.innerHTML = `
-        <span class="drop-emoji">${emoji}</span>
-        <span class="drop-text">+${count} семян ${name}!</span>
-    `;
-    
-    document.body.appendChild(message);
-    
-    setTimeout(() => {
-        message.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-        message.classList.remove('show');
-        setTimeout(() => {
-            if (message.parentNode) {
-                message.parentNode.removeChild(message);
-            }
-        }, 500);
-    }, 3000);
-}
-
-// Обновление отображения инвентаря
-updateInventoryDisplay() {
-    const inventoryItems = document.getElementById('inventoryItems');
-    inventoryItems.innerHTML = '';
-    
-    // Показываем семена
-    let hasSeeds = false;
-    const seedsSection = document.createElement('div');
-    seedsSection.className = 'inventory-section';
-    seedsSection.innerHTML = '<h4>📦 Семена (не для продажи)</h4>';
-    
-    Object.entries(this.seedsInventory).forEach(([seedType, count]) => {
-        if (count > 0) {
-            hasSeeds = true;
-            const seedData = this.seedTypes[seedType];
-            const seedItem = document.createElement('div');
-            seedItem.className = 'inventory-item seed-item';
-            
-            seedItem.innerHTML = `
+            shopItem.innerHTML = `
                 <div class="item-emoji">${seedData.emoji}</div>
                 <div class="item-name">${seedData.name}</div>
-                <div class="item-count">Семян: ${count}</div>
-                <div class="item-drop-chance">Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
-                <div class="item-info">Посадите чтобы вырастить</div>
-            `;
-            
-            seedsSection.appendChild(seedItem);
-        }
-    });
-    
-    if (hasSeeds) {
-        inventoryItems.appendChild(seedsSection);
-    }
-    
-    // Показываем урожай
-    let hasHarvest = false;
-    const harvestSection = document.createElement('div');
-    harvestSection.className = 'inventory-section';
-    harvestSection.innerHTML = '<h4>💰 Урожай (для продажи)</h4>';
-    
-    Object.entries(this.harvestInventory).forEach(([seedType, count]) => {
-        if (count > 0) {
-            hasHarvest = true;
-            const seedData = this.seedTypes[seedType];
-            const harvestItem = document.createElement('div');
-            harvestItem.className = 'inventory-item harvest-item';
-            
-            harvestItem.innerHTML = `
-                <div class="item-emoji">${seedData.emoji}</div>
-                <div class="item-name">${seedData.name}</div>
-                <div class="item-count">Урожая: ${count}</div>
-                <div class="item-sell-price">Цена: ${seedData.baseSellPrice} душ</div>
-                <button class="sell-btn" onclick="game.sellHarvest('${seedType}')">
-                    Продать за ${seedData.baseSellPrice} душ
+                <div class="item-price">Цена: ${seedData.buyPrice} эссенции</div>
+                <div class="item-sell-price">Продажа урожая: ${seedData.baseSellPrice} душ</div>
+                <div class="item-growth">Рост: ${seedData.time/1000}сек | Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
+                <div class="item-description">${seedData.description}</div>
+                <button class="buy-btn" onclick="game.buySeed('${seedType}')" 
+                        ${this.darkEssence < seedData.buyPrice ? 'disabled' : ''}>
+                    Купить семена
                 </button>
             `;
             
-            harvestSection.appendChild(harvestItem);
+            shopItems.appendChild(shopItem);
+        });
+    }
+    
+    // Клик по растению для ускорения роста
+    clickCrop(plotIndex) {
+        const plot = this.plots[plotIndex];
+        if (plot.planted && plot.growth < 100) {
+            plot.clicks++;
+            
+            if (plot.remainingTime > 3000) {
+                plot.remainingTime -= 3000;
+                
+                const progressFromTime = 100 - (plot.remainingTime / plot.totalGrowthTime * 100);
+                const progressFromClicks = (plot.clicks / this.seedTypes[plot.type].clicks) * 100;
+                
+                plot.growth = Math.max(progressFromTime, progressFromClicks);
+                
+                if (plot.growth > 100) plot.growth = 100;
+            } else {
+                plot.growth = 100;
+                plot.remainingTime = 0;
+            }
+            
+            plot.plantTime = Date.now() - (plot.growth / 100) * plot.totalGrowthTime;
+            
+            const plotElement = document.querySelectorAll('.plot')[plotIndex];
+            plotElement.classList.add('clicked');
+            setTimeout(() => {
+                plotElement.classList.remove('clicked');
+            }, 300);
+            
+            this.updateDisplay();
         }
-    });
-    
-    if (hasHarvest) {
-        inventoryItems.appendChild(harvestSection);
     }
     
-    if (!hasSeeds && !hasHarvest) {
-        inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
+    // Рост растений со временем
+    growCrops(deltaTime) {
+        this.plots.forEach(plot => {
+            if (plot.planted && plot.growth < 100) {
+                if (plot.growthMethod === null) {
+                    plot.growthMethod = 'time';
+                }
+                
+                if (plot.growthMethod === 'time') {
+                    plot.remainingTime = Math.max(0, plot.remainingTime - (deltaTime * 1000));
+                    plot.growth = 100 - (plot.remainingTime / plot.totalGrowthTime * 100);
+                    if (plot.growth > 100) plot.growth = 100;
+                }
+            }
+        });
     }
-}
+    
+    // Обновление отображения
+    updateDisplay() {
+        document.getElementById('souls').textContent = `Души: ${this.souls}`;
+        document.getElementById('darkEssence').textContent = `Тёмная эссенция: ${this.darkEssence}`;
+        
+        const plotElements = document.querySelectorAll('.plot');
+        this.plots.forEach((plot, index) => {
+            const plotElement = plotElements[index];
+            if (!plotElement) return;
+            
+            if (plot.planted) {
+                const seedData = this.seedTypes[plot.type];
+                
+                if (plot.growth >= 100) {
+                    plotElement.textContent = seedData.emoji;
+                    plotElement.style.background = '#4a2d5a';
+                    plotElement.className = 'plot ready';
+                    plotElement.title = `${seedData.name} - Готово к сбору! Кликни чтобы собрать (шанс семян: ${Math.round(seedData.dropChance * 100)}%)`;
+                } else {
+                    const growthStage = Math.floor(plot.growth / 25);
+                    const stages = ['🌱', '🪴', '🌿', seedData.emoji];
+                    plotElement.textContent = stages[growthStage] || stages[0];
+                    plotElement.style.background = '#2d5a2d';
+                    plotElement.className = 'plot growing';
+                    
+                    const timeLeft = plot.remainingTime / 1000;
+                    const clicksLeft = this.seedTypes[plot.type].clicks - plot.clicks;
+                    plotElement.title = `${seedData.name} - ${Math.ceil(timeLeft)}сек осталось | Кликов: ${plot.clicks} | Кликай чтобы ускорить рост на 3 секунды!`;
+                }
+                
+                let progressContainer = plotElement.querySelector('.progress-container');
+                if (!progressContainer) {
+                    progressContainer = document.createElement('div');
+                    progressContainer.className = 'progress-container';
+                    plotElement.appendChild(progressContainer);
+                }
+                
+                const timeLeft = Math.ceil(plot.remainingTime / 1000);
+                const clickEffect = plot.clicks > 0 ? ` | -${plot.clicks * 3}сек от кликов` : '';
+                
+                progressContainer.innerHTML = `
+                    <div class="growth-info">
+                        ⏰ ${timeLeft}сек${clickEffect}
+                    </div>
+                    <div class="growth-progress">
+                        <div class="growth-progress-fill" style="width: ${plot.growth}%"></div>
+                    </div>
+                    <div class="click-info">
+                        👆 Кликай! Каждый клик ускоряет рост на 3 секунды
+                    </div>
+                `;
+                
+            } else {
+                plotElement.textContent = '🟫';
+                plotElement.style.background = '#0f3460';
+                plotElement.className = 'plot';
+                plotElement.title = 'Пустой участок - кликни чтобы посадить семена';
+                
+                const progressContainer = plotElement.querySelector('.progress-container');
+                if (progressContainer) {
+                    progressContainer.remove();
+                }
+            }
+        });
+    }
+    
+    // Переключение видимости магазина
+    toggleShop() {
+        this.shopOpen = !this.shopOpen;
+        const shop = document.getElementById('shop');
+        shop.classList.toggle('hidden', !this.shopOpen);
+        
+        if (this.shopOpen) {
+            this.initShop();
+        }
+        
+        if (this.shopOpen && this.inventoryOpen) {
+            this.toggleInventory();
+        }
+    }
+    
+    // Переключение видимости инвентаря
+    toggleInventory() {
+        this.inventoryOpen = !this.inventoryOpen;
+        const inventory = document.getElementById('inventory');
+        inventory.classList.toggle('hidden', !this.inventoryOpen);
+        
+        if (this.inventoryOpen && this.shopOpen) {
+            this.toggleShop();
+        }
+    }
+    
+    // Игровой цикл
+    startGameLoop() {
+        setInterval(() => {
+            const now = Date.now();
+            const deltaTime = (now - this.lastUpdate) / 1000;
+            this.lastUpdate = now;
+            
+            this.growCrops(deltaTime);
+            this.updateDisplay();
+        }, 100);
+    }
+    
+    // Показ сообщения о выпадении семян
+    showDropMessage(emoji, name, count) {
+        const message = document.createElement('div');
+        message.className = 'drop-message';
+        message.innerHTML = `
+            <span class="drop-emoji">${emoji}</span>
+            <span class="drop-text">+${count} семян ${name}!</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 500);
+        }, 3000);
+    }
+    
+    // Обновление отображения инвентаря
+    updateInventoryDisplay() {
+        const inventoryItems = document.getElementById('inventoryItems');
+        inventoryItems.innerHTML = '';
+        
+        // Показываем семена
+        let hasSeeds = false;
+        const seedsSection = document.createElement('div');
+        seedsSection.className = 'inventory-section';
+        seedsSection.innerHTML = '<h4>📦 Семена (не для продажи)</h4>';
+        
+        Object.entries(this.seedsInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasSeeds = true;
+                const seedData = this.seedTypes[seedType];
+                const seedItem = document.createElement('div');
+                seedItem.className = 'inventory-item seed-item';
+                
+                seedItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Семян: ${count}</div>
+                    <div class="item-drop-chance">Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
+                    <div class="item-info">Посадите чтобы вырастить</div>
+                `;
+                
+                seedsSection.appendChild(seedItem);
+            }
+        });
+        
+        if (hasSeeds) {
+            inventoryItems.appendChild(seedsSection);
+        }
+        
+        // Показываем урожай
+        let hasHarvest = false;
+        const harvestSection = document.createElement('div');
+        harvestSection.className = 'inventory-section';
+        harvestSection.innerHTML = '<h4>💰 Урожай (для продажи)</h4>';
+        
+        Object.entries(this.harvestInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasHarvest = true;
+                const seedData = this.seedTypes[seedType];
+                const harvestItem = document.createElement('div');
+                harvestItem.className = 'inventory-item harvest-item';
+                
+                harvestItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Урожая: ${count}</div>
+                    <div class="item-sell-price">Цена: ${seedData.baseSellPrice} душ</div>
+                    <button class="sell-btn" onclick="game.sellHarvest('${seedType}')">
+                        Продать за ${seedData.baseSellPrice} душ
+                    </button>
+                `;
+                
+                harvestSection.appendChild(harvestItem);
+            }
+        });
+        
+        if (hasHarvest) {
+            inventoryItems.appendChild(harvestSection);
+        }
+        
+        if (!hasSeeds && !hasHarvest) {
+            inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
+        }
+    }
 // Обработчики для модального окна (добавьте в самый конец файла, после класса)
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('authModal');
@@ -897,4 +896,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
