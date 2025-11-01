@@ -125,17 +125,23 @@ class DarkFarmGame {
 
     // ========== СИСТЕМА АККАУНТОВ ==========
 
+        
     
-
     checkAuthState() {
         if (this.auth) {
+            console.log("Подписываемся на изменения состояния аутентификации...");
             this.auth.onAuthStateChanged((user) => {
+                console.log("Состояние аутентификации изменилось:", user);
                 if (user) {
                     this.currentUser = user;
                     document.getElementById('authButton').textContent = `🚪 ${user.email}`;
                     this.loadGameFromCloud();
+                } else {
+                    console.log("Пользователь не авторизован");
                 }
             });
+        } else {
+            console.log("Firebase Auth не инициализирован");
         }
     }
     setupAuthModal() {
@@ -178,7 +184,6 @@ class DarkFarmGame {
         document.getElementById('registerPassword').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.register();
         });
-        this.checkAuthState();
         setTimeout(() => {
             console.log("Firebase Config:", this.firebaseConfig);
             console.log("Firebase Auth:", this.auth);
@@ -896,6 +901,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
