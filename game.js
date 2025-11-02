@@ -26,7 +26,7 @@ class DarkFarmGame {
         this.seedTypes = {
             'shadow_berry': {
                 name: 'Теневая ягода',
-                emoji: '🌑',
+                emoji: '🍇',
                 time: 10000,
                 clicks: 5,
                 buyPrice: 10,
@@ -1268,3 +1268,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
