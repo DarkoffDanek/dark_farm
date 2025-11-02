@@ -8,44 +8,51 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="game.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🌱 Тёмная Ферма</h1>
-            <div class="resources">
-                <span id="souls">Души: 0</span>
-                <span id="darkEssence">Тёмная эссенция: 100</span>
+    <div class="app-wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>🌱 Тёмная Ферма</h1>
+                <div class="resources">
+                    <span id="souls">Души: 0</span>
+                    <span id="darkEssence">Тёмная эссенция: 100</span>
+                </div>
             </div>
-        </div>
 
-        <div class="controls">
-            <button id="shopToggle" class="toggle-btn">🏪 Магазин Семян</button>
-            <button id="inventoryToggle" class="toggle-btn">🎒 Инвентарь</button>
-            <button id="authButton" class="toggle-btn auth-btn">🔐 Войти в аккаунт</button>
-        </div>
+            <div class="controls">
+                <button id="shopToggle" class="toggle-btn">🏪 Магазин Семян</button>
+                <button id="inventoryToggle" class="toggle-btn">🎒 Инвентарь</button>
+                <button id="authButton" class="toggle-btn auth-btn">👤 Аккаунт</button>
+            </div>
 
-        <!-- Магазин -->
-        <div id="shop" class="shop hidden">
-            <h3>🏪 Тёмный рынок семян</h3>
-            <div class="shop-items" id="shopItems"></div>
-        </div>
+            <!-- Магазин -->
+            <div id="shop" class="shop hidden">
+                <h3>🏪 Тёмный рынок семян</h3>
+                <div class="shop-scroll-container">
+                    <div class="shop-items" id="shopItems"></div>
+                </div>
+            </div>
 
-        <!-- Инвентарь -->
-        <div id="inventory" class="inventory hidden">
-            <h3>🎒 Инвентарь</h3>
-            <div class="inventory-items" id="inventoryItems"></div>
-        </div>
+            <!-- Инвентарь -->
+            <div id="inventory" class="inventory hidden">
+                <h3>🎒 Инвентарь</h3>
+                <div class="inventory-scroll-container">
+                    <div class="inventory-items" id="inventoryItems"></div>
+                </div>
+            </div>
 
-        <div class="farm-area" id="farmArea"></div>
+            <div class="farm-container">
+                <div class="farm-area" id="farmArea"></div>
+            </div>
 
-        <div class="instructions">
-            <h3>⚡ Механика игры:</h3>
-            <p>• Купи семена в магазине → посади на участке</p>
-            <p>• Кликай на растения или жди пока вырастут</p>
-            <p>• Собери урожай → продай в инвентаре за души</p>
-            <p>• Чем дольше растёт семя - тем дороже урожай!</p>
+            <div class="instructions">
+                <h3>⚡ Механика игры:</h3>
+                <p>• Купи семена в магазине → посади на участке</p>
+                <p>• Кликай на растения или жди пока вырастут</p>
+                <p>• Собери урожай → продай в инвентаре за души</p>
+                <p>• Чем дольше растёт семя - тем дороже урожай!</p>
+            </div>
         </div>
     </div>
 
@@ -77,6 +84,3 @@
     <script src="game.js"></script>
 </body>
 </html>
-
-
-
