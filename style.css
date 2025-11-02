@@ -1135,3 +1135,122 @@ h1, h3 {
         overflow-x: auto; /* Оставляем скролл только на планшетах и телефонах */
     }
 }
+/* Стили для счетчиков продажи в инвентаре */
+.harvest-item .quantity-total {
+    color: #e94560 !important;
+    font-weight: bold;
+}
+
+.harvest-item .quantity-hint {
+    color: #e94560 !important;
+}
+
+.harvest-item .sell-btn:disabled {
+    background: #2a2a2a;
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* Улучшаем отображение счетчиков в инвентаре */
+.inventory-item .quantity-controls {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+}
+
+.inventory-item .quantity-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.inventory-item .quantity-buttons {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.inventory-item .quantity-btn {
+    width: 30px;
+    height: 30px;
+    background: #4a2d5a;
+    border: none;
+    border-radius: 3px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.inventory-item .quantity-btn:hover:not(:disabled) {
+    background: #5a3d6a;
+}
+
+.inventory-item .quantity-btn:disabled {
+    background: #3a2d4a;
+    cursor: not-allowed;
+}
+
+.inventory-item .quantity-input {
+    width: 50px;
+    height: 30px;
+    text-align: center;
+    border: 1px solid #4a2d5a;
+    border-radius: 3px;
+    background: #1a1a2e;
+    color: white;
+}
+
+.inventory-item .quantity-max-btn {
+    height: 30px;
+    padding: 0 10px;
+    background: #e94560;
+    border: none;
+    border-radius: 3px;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.inventory-item .quantity-max-btn:hover {
+    background: #ff6b95;
+}
+
+.inventory-item .quantity-hint {
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Адаптивность для счетчиков в инвентаре */
+@media (max-width: 768px) {
+    .inventory-item .quantity-buttons {
+        gap: 3px;
+    }
+    
+    .inventory-item .quantity-input {
+        width: 45px;
+    }
+    
+    .inventory-item .quantity-max-btn {
+        padding: 0 8px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .inventory-item .quantity-controls {
+        padding: 8px;
+    }
+    
+    .inventory-item .quantity-info {
+        font-size: 13px;
+    }
+    
+    .inventory-item .quantity-hint {
+        font-size: 11px;
+    }
+}
