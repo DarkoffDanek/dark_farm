@@ -1455,22 +1455,7 @@ class DarkFarmGame {
         return false;
     }
     
-    // Добавляем в window.onload
-    window.onload = function() {
-        game = new DarkFarmGame();
-        
-        document.getElementById('shopToggle').addEventListener('click', () => {
-            game.toggleShop();
-        });
-        
-        document.getElementById('inventoryToggle').addEventListener('click', () => {
-            game.toggleInventory();
-        });
-        
-        document.getElementById('buildingsToggle').addEventListener('click', () => {
-            game.toggleBuildings();
-        });
-    };
+
     initShop() {
         const shopItems = document.getElementById('shopItems');
         shopItems.innerHTML = '';
@@ -2137,6 +2122,7 @@ class DarkFarmGame {
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
+    ame = new DarkFarmGame();
     
     document.getElementById('shopToggle').addEventListener('click', () => {
         game.toggleShop();
@@ -2145,7 +2131,13 @@ window.onload = function() {
     document.getElementById('inventoryToggle').addEventListener('click', () => {
         game.toggleInventory();
     });
+    
+    document.getElementById('buildingsToggle').addEventListener('click', () => {
+        game.toggleBuildings();
+    });
 };
+    
+
 
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('authModal');
@@ -2163,4 +2155,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
