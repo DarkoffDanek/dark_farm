@@ -914,3 +914,16 @@ h1, h3 {
     margin-right: 10px;
     font-size: 1.2em;
 }
+/* Стили для элементов обмена и грядок (дополнение к существующим) */
+.exchange-shop-item .quantity-total,
+.plot-shop-item .quantity-total {
+    color: #2196F3;
+    font-weight: bold;
+}
+
+.exchange-shop-item .buy-btn:disabled,
+.plot-shop-item .buy-btn:disabled {
+    background: #2a2a2a;
+    color: #666;
+    cursor: not-allowed;
+}
