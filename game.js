@@ -4,6 +4,7 @@ class DarkFarmGame {
         this.darkEssence = 100;
         this.seedsInventory = {};
         this.harvestInventory = {};
+        this.shopCounters = {};
         
         // Начальные грядки - 3 штуки
         this.plots = [];
@@ -25,7 +26,9 @@ class DarkFarmGame {
         }
         
         this.lastUpdate = Date.now();
-        
+        Object.keys(this.seedTypes).forEach(seedType => {
+            this.shopCounters[seedType] = 1;
+        });
         this.seedTypes = {
             'shadow_berry': {
                 name: 'Теневая ягода',
@@ -620,19 +623,52 @@ class DarkFarmGame {
     // Добавьте вызов saveGameToStorage() в ключевые методы:
     buySeed(seedType) {
         const seedData = this.seedTypes[seedType];
-        if (this.darkEssence >= seedData.buyPrice) {
-            this.darkEssence -= seedData.buyPrice;
+        const quantity = this.shopCounters[seedType] || 1;
+        const totalPrice = seedData.buyPrice * quantity;
+        
+        if (this.darkEssence >= totalPrice) {
+            this.darkEssence -= totalPrice;
             
             if (!this.seedsInventory[seedType]) {
                 this.seedsInventory[seedType] = 0;
             }
-            this.seedsInventory[seedType]++;
+            this.seedsInventory[seedType] += quantity;
+            
+            // Сбрасываем счетчик после покупки
+            this.shopCounters[seedType] = 1;
             
             this.updateDisplay();
-            this.initShop();
+            this.initShop(); // Перерисовываем магазин с обновленными данными
             this.updateInventoryDisplay();
-            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+            this.saveGameToCloud();
+            
+            // Показываем сообщение о успешной покупке
+            this.showPurchaseMessage(seedData.emoji, seedData.name, quantity, totalPrice);
         }
+    }
+    
+    showPurchaseMessage(emoji, name, quantity, price) {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        message.innerHTML = `
+            <span class="purchase-emoji">${emoji}</span>
+            <span class="purchase-text">Куплено ${quantity} семян ${name} за ${price} эссенции!</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 500);
+        }, 3000);
     }
 
     plantSeed(plotIndex, seedType) {
@@ -827,7 +863,7 @@ class DarkFarmGame {
         const shopItems = document.getElementById('shopItems');
         shopItems.innerHTML = '';
         
-        // Обмен валюты
+        // Обмен валюты (без изменений)
         const exchangeShopItem = document.createElement('div');
         exchangeShopItem.className = 'shop-item exchange-shop-item';
         const canExchange = this.souls >= this.exchangeAmount;
@@ -845,7 +881,7 @@ class DarkFarmGame {
         `;
         shopItems.appendChild(exchangeShopItem);
         
-        // Покупка грядки
+        // Покупка грядки (без изменений)
         const plotShopItem = document.createElement('div');
         plotShopItem.className = 'shop-item plot-shop-item';
         const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots;
@@ -863,10 +899,15 @@ class DarkFarmGame {
         `;
         shopItems.appendChild(plotShopItem);
         
-        // Семена
+        // Семена с счетчиками
         Object.entries(this.seedTypes).forEach(([seedType, seedData]) => {
             const shopItem = document.createElement('div');
             shopItem.className = `shop-item ${seedData.buyPrice > 100 ? 'expensive' : 'cheap'}`;
+            
+            const currentCount = this.shopCounters[seedType] || 1;
+            const totalPrice = seedData.buyPrice * currentCount;
+            const canAfford = this.darkEssence >= totalPrice;
+            const maxAffordable = Math.floor(this.darkEssence / seedData.buyPrice);
             
             shopItem.innerHTML = `
                 <div class="item-emoji">${seedData.emoji}</div>
@@ -875,9 +916,32 @@ class DarkFarmGame {
                 <div class="item-sell-price">Продажа урожая: ${seedData.baseSellPrice} душ</div>
                 <div class="item-growth">Рост: ${seedData.time/1000}сек | Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
                 <div class="item-description">${seedData.description}</div>
+                
+                <div class="quantity-controls">
+                    <div class="quantity-info">
+                        <span>Количество: </span>
+                        <span class="quantity-total">${totalPrice} эссенции</span>
+                    </div>
+                    <div class="quantity-buttons">
+                        <button class="quantity-btn" onclick="game.decrementQuantity('${seedType}')">-</button>
+                        <input type="number" 
+                               class="quantity-input" 
+                               id="quantity-${seedType}" 
+                               value="${currentCount}" 
+                               min="1" 
+                               max="${maxAffordable}" 
+                               onchange="game.updateQuantityFromInput('${seedType}')">
+                        <button class="quantity-btn" onclick="game.incrementQuantity('${seedType}')">+</button>
+                        <button class="quantity-max-btn" onclick="game.setMaxQuantity('${seedType}')">MAX</button>
+                    </div>
+                    <div class="quantity-hint" id="hint-${seedType}">
+                        Можно купить: ${maxAffordable} шт
+                    </div>
+                </div>
+                
                 <button class="buy-btn" onclick="game.buySeed('${seedType}')" 
-                        ${this.darkEssence < seedData.buyPrice ? 'disabled' : ''}>
-                    Купить семена
+                        ${!canAfford ? 'disabled' : ''}>
+                    Купить ${currentCount} семян за ${totalPrice} эссенции
                 </button>
             `;
             
@@ -939,6 +1003,12 @@ class DarkFarmGame {
         document.getElementById('souls').textContent = `Души: ${this.souls}`;
         document.getElementById('darkEssence').textContent = `Тёмная эссенция: ${this.darkEssence}`;
         
+        // Если магазин открыт, обновляем доступные количества
+        if (this.shopOpen) {
+            Object.keys(this.seedTypes).forEach(seedType => {
+                this.updateShopItem(seedType);
+            });
+        }
         const plotElements = document.querySelectorAll('.plot');
         this.plots.forEach((plot, index) => {
             const plotElement = plotElements[index];
@@ -1132,6 +1202,79 @@ class DarkFarmGame {
             inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
         }
     }
+    // Методы для управления количеством в магазине
+    incrementQuantity(seedType) {
+        const maxAffordable = Math.floor(this.darkEssence / this.seedTypes[seedType].buyPrice);
+        const currentCount = this.shopCounters[seedType] || 1;
+        
+        if (currentCount < maxAffordable) {
+            this.shopCounters[seedType] = currentCount + 1;
+            this.updateShopItem(seedType);
+        }
+    }
+    
+    decrementQuantity(seedType) {
+        const currentCount = this.shopCounters[seedType] || 1;
+        if (currentCount > 1) {
+            this.shopCounters[seedType] = currentCount - 1;
+            this.updateShopItem(seedType);
+        }
+    }
+    
+    setMaxQuantity(seedType) {
+        const maxAffordable = Math.floor(this.darkEssence / this.seedTypes[seedType].buyPrice);
+        if (maxAffordable > 0) {
+            this.shopCounters[seedType] = maxAffordable;
+            this.updateShopItem(seedType);
+        }
+    }
+    
+    updateQuantityFromInput(seedType) {
+        const input = document.getElementById(`quantity-${seedType}`);
+        const maxAffordable = Math.floor(this.darkEssence / this.seedTypes[seedType].buyPrice);
+        let value = parseInt(input.value) || 1;
+        
+        if (value < 1) value = 1;
+        if (value > maxAffordable) value = maxAffordable;
+        
+        this.shopCounters[seedType] = value;
+        this.updateShopItem(seedType);
+    }
+    
+    updateShopItem(seedType) {
+        const seedData = this.seedTypes[seedType];
+        const currentCount = this.shopCounters[seedType] || 1;
+        const totalPrice = seedData.buyPrice * currentCount;
+        const maxAffordable = Math.floor(this.darkEssence / seedData.buyPrice);
+        const canAfford = this.darkEssence >= totalPrice;
+        
+        // Обновляем input
+        const input = document.getElementById(`quantity-${seedType}`);
+        if (input) {
+            input.value = currentCount;
+            input.max = maxAffordable;
+        }
+        
+        // Обновляем подсказку
+        const hint = document.getElementById(`hint-${seedType}`);
+        if (hint) {
+            hint.textContent = `Можно купить: ${maxAffordable} шт`;
+            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
+        }
+        
+        // Обновляем общую стоимость
+        const totalElement = document.querySelector(`#quantity-${seedType}`).closest('.quantity-controls').querySelector('.quantity-total');
+        if (totalElement) {
+            totalElement.textContent = `${totalPrice} эссенции`;
+        }
+        
+        // Обновляем кнопку
+        const button = document.querySelector(`#quantity-${seedType}`).closest('.shop-item').querySelector('.buy-btn');
+        if (button) {
+            button.textContent = `Купить ${currentCount} семян за ${totalPrice} эссенции`;
+            button.disabled = !canAfford;
+        }
+    }
 }
 
 let game;
@@ -1166,6 +1309,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
