@@ -776,6 +776,22 @@ h1, h3 {
     border-left: 4px solid #4CAF50;
 }
 
+.offline-progress-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transform: translateX(400px);
+    transition: transform 0.5s ease-in-out;
+    max-width: 300px;
+    border-left: 4px solid #4CAF50;
+}
+
 .offline-progress-message.show {
     transform: translateX(0);
 }
