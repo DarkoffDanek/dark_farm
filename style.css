@@ -1456,3 +1456,78 @@ h1, h3 {
         font-size: 0.85em;
     }
 }
+
+/* Стили для подключенных грядок */
+.plot.connected-to-cauldron {
+    border: 2px solid #9C27B0 !important;
+    box-shadow: 0 0 10px rgba(156, 39, 176, 0.5) !important;
+}
+
+.cauldron-connection {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 16px;
+    background: rgba(156, 39, 176, 0.8);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 1.5s infinite;
+}
+
+.plot.cauldron-mode {
+    border: 2px dashed #FF9800 !important;
+    cursor: pointer !important;
+}
+
+.plot.cauldron-mode:hover {
+    border: 2px solid #FF9800 !important;
+    background: rgba(255, 152, 0, 0.1) !important;
+}
+
+.plot.cauldron-active {
+    animation: cauldron-suction 2s ease-in-out !important;
+}
+
+.suction-effect {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    animation: suction 2s ease-in-out;
+    z-index: 10;
+}
+
+@keyframes cauldron-suction {
+    0% { transform: scale(1); }
+    25% { transform: scale(0.95); }
+    50% { transform: scale(0.9); box-shadow: 0 0 20px rgba(156, 39, 176, 0.8); }
+    75% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+@keyframes suction {
+    0% { 
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% { 
+        opacity: 0;
+        transform: translate(-50%, -100px) scale(0.5);
+    }
+}
+
+/* Кнопка для режима подключения */
+.cauldron-mode-btn {
+    background: linear-gradient(135deg, #9C27B0, #E91E63) !important;
+    border: 1px solid #FF9800 !important;
+}
+
+.cauldron-mode-btn.active {
+    background: linear-gradient(135deg, #FF9800, #FF5722) !important;
+    animation: gentle-pulse 1.5s infinite;
+}
