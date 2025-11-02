@@ -22,6 +22,7 @@
 
             <div class="controls">
                 <button id="shopToggle" class="toggle-btn">🏪 Магазин Семян</button>
+                <button id="buildingsToggle" class="toggle-btn">🏭 Постройки</button>
                 <button id="inventoryToggle" class="toggle-btn">🎒 Инвентарь</button>
                 <button id="authButton" class="toggle-btn auth-btn">👤 Аккаунт</button>
             </div>
@@ -31,6 +32,13 @@
                 <h3>🏪 Тёмный рынок семян</h3>
                 <div class="shop-scroll-container">
                     <div class="shop-items" id="shopItems"></div>
+                </div>
+            </div>
+            <!-- Добавляем после существующих магазина и инвентаря -->
+            <div id="buildingsShop" class="buildings-shop hidden">
+                <h3>🏭 Магазин построек</h3>
+                <div class="buildings-scroll-container">
+                    <div class="buildings-items" id="buildingsItems"></div>
                 </div>
             </div>
 
@@ -84,3 +92,4 @@
     <script src="game.js"></script>
 </body>
 </html>
+
