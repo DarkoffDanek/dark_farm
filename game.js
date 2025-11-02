@@ -378,6 +378,9 @@ class DarkFarmGame {
             harvestInventory: this.harvestInventory,
             plots: this.plots,
             lastUpdate: Date.now()
+            connectedPlots: this.connectedPlots,
+            cauldronMode: this.cauldronMode,
+            currentSeedTypeForCauldron: this.currentSeedTypeForCauldron
         };
         localStorage.setItem('darkFarm_backup', JSON.stringify(gameData));
     }
@@ -393,6 +396,9 @@ class DarkFarmGame {
                 this.harvestInventory = gameData.harvestInventory || {};
                 this.elixirInventory = gameData.elixirInventory || {};
                 this.plots = gameData.plots || [];
+                this.connectedPlots = gameData.connectedPlots || [];
+                this.cauldronMode = gameData.cauldronMode || false;
+                this.currentSeedTypeForCauldron = gameData.currentSeedTypeForCauldron || null;
                 
                 // Восстанавливаем состояние построек если есть
                 if (gameData.buildings) {
@@ -2282,7 +2288,21 @@ window.onload = function() {
             modal.classList.add('hidden');
         }
     });
+    document.getElementById('cauldronModeToggle').addEventListener('click', () => {
+        game.toggleCauldronMode();
+        
+        // Обновляем вид кнопки
+        const btn = document.getElementById('cauldronModeToggle');
+        if (game.cauldronMode) {
+            btn.classList.add('active');
+            btn.textContent = '🔗 Режим подключения (ВКЛ)';
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = '🔗 Подключить грядки';
+        }
+    });
 };
+
 
 
 
