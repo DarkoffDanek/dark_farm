@@ -133,8 +133,8 @@ class DarkFarmGame {
         // ✅ ПРАВИЛЬНО - вызовы методов после их объявления в классе
         this.calculateOfflineProgress();
         this.setupBeforeUnload();
-    }
-
+        }
+    
     // ========== СИСТЕМА АККАУНТОВ ==========
 
         
@@ -439,7 +439,7 @@ class DarkFarmGame {
         } catch (error) {
             console.error("Ошибка регистрации:", error);
             this.showAuthStatus('Ошибка регистрации: ' + error.message);
-        }
+        
 
     
     }
@@ -1115,6 +1115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
