@@ -243,6 +243,20 @@ class DarkFarmGame {
             return false;
         }
         this.calculateOfflineProgress();
+        // Добавьте в конец конструктора:
+        setupBeforeUnload() {
+            window.addEventListener('beforeunload', () => {
+                this.saveLastPlayedTime();
+                if (this.currentUser) {
+                    this.saveGameToCloud();
+                } else {
+                    this.saveToLocalStorage();
+                }
+            });
+        }    
+
+        // И вызовите в конструкторе:
+        this.setupBeforeUnload();
     }
 
     // ========== СИСТЕМА АККАУНТОВ ==========
@@ -445,6 +459,8 @@ class DarkFarmGame {
             console.error("Ошибка регистрации:", error);
             this.showAuthStatus('Ошибка регистрации: ' + error.message);
         }
+
+    
     }
 
         // Показываем форму входа
@@ -554,6 +570,18 @@ class DarkFarmGame {
             clearInterval(this.autoSaveInterval);
             this.autoSaveInterval = null;
         }
+    }
+    startAutoSave() {
+        // Автосохранение каждые 30 секунд
+        this.autoSaveInterval = setInterval(() => {
+            if (this.currentUser) {
+                this.saveGameToCloud();
+            } else {
+                // Если пользователь не авторизован, сохраняем только в localStorage
+                this.saveToLocalStorage();
+                this.saveLastPlayedTime();
+            }
+        }, 30000);
     }
     
     async createNewUserData() {
@@ -1108,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
