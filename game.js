@@ -19,7 +19,9 @@ class DarkFarmGame {
         // Настройки обмена валюты
         this.exchangeRate = 5;
         this.exchangeAmount = 10;
-        
+        this.cauldronMode = false; // Режим подключения грядок к котлу
+        this.connectedPlots = []; // Индексы грядок, подключенных к котлу
+        this.currentSeedTypeForCauldron = null; // Тип семян для переработки
         // Система аккаунтов
         this.currentUser = null;
         this.autoSaveInterval = null;
@@ -260,7 +262,78 @@ class DarkFarmGame {
             this.saveToLocalStorage();
         }
     }
+    toggleCauldronMode() {
+        this.cauldronMode = !this.cauldronMode;
+        
+        if (this.cauldronMode) {
+            this.showCauldronModeInstructions();
+        } else {
+            this.hideCauldronModeInstructions();
+        }
+        
+        this.renderFarm();
+    }
     
+    // Показать инструкции для режима подключения
+    showCauldronModeInstructions() {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        message.style.background = '#9C27B0';
+        message.innerHTML = `
+            <span class="purchase-emoji">🔗</span>
+            <span class="purchase-text">Режим подключения: кликайте на грядки чтобы подключить/отключить их от котла</span>
+        `;
+        message.id = 'cauldron-mode-message';
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+    }
+    
+    // Скрыть инструкции
+    hideCauldronModeInstructions() {
+        const message = document.getElementById('cauldron-mode-message');
+        if (message) {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 500);
+        }
+    }
+    
+    // Подключение/отключение грядки к котлу
+    togglePlotConnection(plotIndex) {
+        if (!this.cauldronMode) return;
+        
+        const index = this.connectedPlots.indexOf(plotIndex);
+        if (index > -1) {
+            // Отключаем грядку
+            this.connectedPlots.splice(index, 1);
+        } else {
+            // Подключаем грядку
+            this.connectedPlots.push(plotIndex);
+            
+            // Если это первая подключенная грядка, запоминаем тип семян
+            if (this.connectedPlots.length === 1) {
+                const plot = this.plots[plotIndex];
+                if (plot.planted) {
+                    this.currentSeedTypeForCauldron = plot.type;
+                }
+            }
+        }
+        
+        this.renderFarm();
+        this.saveGameToCloud();
+    }
+    
+    // Проверка, подключена ли грядка к котлу
+    isPlotConnected(plotIndex) {
+        return this.connectedPlots.includes(plotIndex);
+    }
     showOfflineProgressMessage(offlineTime) {
         const hours = Math.floor(offlineTime / (1000 * 60 * 60));
         const minutes = Math.floor((offlineTime % (1000 * 60 * 60)) / (1000 * 60));
@@ -1003,7 +1076,24 @@ class DarkFarmGame {
         this.plots.forEach((plot, index) => {
             const plotElement = document.createElement('div');
             plotElement.className = 'plot';
-            plotElement.onclick = () => this.handlePlotClick(index);
+            plotElement.onclick = (e) => this.handlePlotClick(index, e);
+            
+            // Добавляем индикатор подключения к котлу
+            if (this.isPlotConnected(index)) {
+                plotElement.classList.add('connected-to-cauldron');
+                
+                const connectionIndicator = document.createElement('div');
+                connectionIndicator.className = 'cauldron-connection';
+                connectionIndicator.innerHTML = '🔗';
+                connectionIndicator.title = 'Подключено к котлу';
+                plotElement.appendChild(connectionIndicator);
+            }
+            
+            // Добавляем индикатор режима подключения
+            if (this.cauldronMode) {
+                plotElement.classList.add('cauldron-mode');
+                plotElement.title = 'Режим подключения: кликните чтобы подключить/отключить от котла';
+            }
             
             if (plot.planted) {
                 const seedData = this.seedTypes[plot.type];
@@ -1027,7 +1117,13 @@ class DarkFarmGame {
         this.updateDisplay();
     }
 
-    handlePlotClick(plotIndex) {
+    handlePlotClick(plotIndex, event) {
+        // Если включен режим подключения к котлу
+        if (this.cauldronMode) {
+            this.togglePlotConnection(plotIndex);
+            return;
+        }
+        
         const plot = this.plots[plotIndex];
         if (plot.planted) {
             if (plot.growth >= 100) {
@@ -1043,20 +1139,6 @@ class DarkFarmGame {
             } else {
                 alert('Нет семян в инвентаре! Купите в магазине.');
             }
-        }
-    }
-    toggleBuildings() {
-        this.buildingsOpen = !this.buildingsOpen;
-        const buildingsShop = document.getElementById('buildingsShop');
-        buildingsShop.classList.toggle('hidden', !this.buildingsOpen);
-        
-        if (this.buildingsOpen) {
-            this.initBuildingsShop();
-        }
-        
-        if (this.buildingsOpen && (this.shopOpen || this.inventoryOpen)) {
-            if (this.shopOpen) this.toggleShop();
-            if (this.inventoryOpen) this.toggleInventory();
         }
     }
     
@@ -1196,10 +1278,47 @@ class DarkFarmGame {
         building.totalTime = (this.seedTypes[seedType].time / building.speedMultiplier) * quantity;
         building.inputQuantity = quantity;
         
+        // Если есть подключенные грядки, добавляем визуальный эффект
+        if (this.connectedPlots.length > 0) {
+            this.startCauldronAnimation();
+        }
+        
         this.updateDisplay();
         this.initBuildingsShop();
         this.updateInventoryDisplay();
         this.saveGameToCloud();
+    }
+    
+    // Анимация работы котла с подключенными грядками
+    startCauldronAnimation() {
+        this.connectedPlots.forEach(plotIndex => {
+            const plotElement = document.querySelectorAll('.plot')[plotIndex];
+            if (plotElement) {
+                plotElement.classList.add('cauldron-active');
+                
+                // Создаем эффект "высасывания"
+                const suctionEffect = document.createElement('div');
+                suctionEffect.className = 'suction-effect';
+                suctionEffect.innerHTML = '🌪️';
+                plotElement.appendChild(suctionEffect);
+                
+                setTimeout(() => {
+                    if (suctionEffect.parentNode) {
+                        suctionEffect.parentNode.removeChild(suctionEffect);
+                    }
+                }, 2000);
+            }
+        });
+        
+        // Убираем эффект после завершения анимации
+        setTimeout(() => {
+            this.connectedPlots.forEach(plotIndex => {
+                const plotElement = document.querySelectorAll('.plot')[plotIndex];
+                if (plotElement) {
+                    plotElement.classList.remove('cauldron-active');
+                }
+            });
+        }, 2000);
     }
     
     collectBuilding(buildingId) {
@@ -2164,6 +2283,7 @@ window.onload = function() {
         }
     });
 };
+
 
 
 
