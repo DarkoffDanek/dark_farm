@@ -122,7 +122,9 @@ class DarkFarmGame {
         this.updateInventoryDisplay();
         this.renderFarm();
         this.initFirebase();
-        
+        this.loadFromLocalStorage()
+        this.calculateOfflineProgress();
+        this.setupBeforeUnload();
         setTimeout(() => {
             if (!this.auth) {
                 console.warn("Firebase Auth все еще не инициализирован, пробуем снова...");
@@ -130,9 +132,7 @@ class DarkFarmGame {
             }
         }, 2000);
         
-        // ✅ ПРАВИЛЬНО - вызовы методов после их объявления в классе
-        this.calculateOfflineProgress();
-        this.setupBeforeUnload();
+
         }
     
     // ========== СИСТЕМА АККАУНТОВ ==========
@@ -140,11 +140,16 @@ class DarkFarmGame {
         
     calculateOfflineProgress() {
         const lastPlayed = localStorage.getItem('darkFarm_lastPlayed');
-        if (!lastPlayed) return;
+        if (!lastPlayed) {
+            this.saveLastPlayedTime(); // Сохраняем время первого запуска
+            return;
+        }
     
         const now = Date.now();
         const offlineTime = now - parseInt(lastPlayed);
         const maxOfflineTime = 24 * 60 * 60 * 1000;
+        
+        console.log(`Офлайн время: ${offlineTime}ms`);
         
         if (offlineTime > 10000 && offlineTime < maxOfflineTime) {
             this.processOfflineGrowth(offlineTime);
@@ -155,8 +160,10 @@ class DarkFarmGame {
     }
     
     processOfflineGrowth(offlineTime) {
+        let growthOccurred = false;
+        
         this.plots.forEach(plot => {
-            if (plot.planted && plot.growth < 100) {
+            if (plot.planted && plot.growth < 100 && plot.totalGrowthTime > 0) {
                 const growthPerMs = 100 / plot.totalGrowthTime;
                 const offlineGrowth = growthPerMs * offlineTime;
                 
@@ -167,10 +174,16 @@ class DarkFarmGame {
                     plot.growth = 100;
                     plot.remainingTime = 0;
                 }
+                
+                growthOccurred = true;
+                console.log(`Грядка выросла на ${offlineGrowth.toFixed(2)}%`);
             }
         });
         
-        this.updateDisplay();
+        if (growthOccurred) {
+            this.updateDisplay();
+            this.saveToLocalStorage(); // Сохраняем изменения
+        }
     }
     
     showOfflineProgressMessage(offlineTime) {
@@ -181,12 +194,18 @@ class DarkFarmGame {
         if (hours > 0) timeString += `${hours}ч `;
         if (minutes > 0) timeString += `${minutes}м`;
         
+        // Считаем сколько растений выросло
+        const grownPlants = this.plots.filter(plot => 
+            plot.planted && plot.growth >= 100
+        ).length;
+        
         const message = document.createElement('div');
         message.className = 'offline-progress-message';
         message.innerHTML = `
             <div class="offline-header">⚡ Офлайн прогресс</div>
             <div class="offline-time">Вы отсутствовали: ${timeString}</div>
-            <div class="offline-info">Ваши растения выросли за время вашего отсутствия!</div>
+            <div class="offline-info">Выросли ${grownPlants} растений!</div>
+            <div class="offline-tip">Кликайте на растения для сбора урожая</div>
         `;
         
         document.body.appendChild(message);
@@ -439,11 +458,8 @@ class DarkFarmGame {
         } catch (error) {
             console.error("Ошибка регистрации:", error);
             this.showAuthStatus('Ошибка регистрации: ' + error.message);
-        
-
-    
+        }
     }
-
         // Показываем форму входа
 
 
@@ -1115,6 +1131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
