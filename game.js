@@ -1917,6 +1917,7 @@ class DarkFarmGame {
             this.lastUpdate = now;
             
             this.growCrops(deltaTime);
+            this.updateBuildings(deltaTime); // Добавьте эту строку
             this.updateDisplay();
         }, 100);
     }
@@ -2155,5 +2156,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
