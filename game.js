@@ -20,15 +20,9 @@ class DarkFarmGame {
         this.currentUser = null;
         this.autoSaveInterval = null;
         
-        // Создаем начальные грядки
-        for (let i = 0; i < this.initialPlots; i++) {
-            this.addNewPlot();
-        }
-        
         this.lastUpdate = Date.now();
-        Object.keys(this.seedTypes).forEach(seedType => {
-            this.shopCounters[seedType] = 1;
-        });
+        
+        // ✅ ПРАВИЛЬНЫЙ ПОРЯДОК: seedTypes ДО инициализации shopCounters
         this.seedTypes = {
             'shadow_berry': {
                 name: 'Теневая ягода',
@@ -102,6 +96,11 @@ class DarkFarmGame {
             }
         };
         
+        // ✅ ТЕПЕРЬ инициализируем shopCounters после seedTypes
+        Object.keys(this.seedTypes).forEach(seedType => {
+            this.shopCounters[seedType] = 1;
+        });
+        
         this.shopOpen = false;
         this.inventoryOpen = false;
         
@@ -117,22 +116,27 @@ class DarkFarmGame {
         this.firebaseApp = null;
         this.db = null;
         this.auth = null;
-        this.loadFromLocalStorage()
+        
+        // ✅ ПРАВИЛЬНЫЙ ПОРЯДОК ИНИЦИАЛИЗАЦИИ:
+        // 1. Загружаем данные
+        this.loadFromLocalStorage();
+        
+        // 2. Если данных нет, создаем начальные грядки
         if (this.plots.length === 0) {
             for (let i = 0; i < this.initialPlots; i++) {
                 this.addNewPlot();
             }
-    }
-        // Инициализация
+        }
+        
+        // 3. Инициализируем интерфейс
         this.setupAuthModal();
         this.startGameLoop();
         this.initShop();
         this.updateInventoryDisplay();
-        this.renderFarm(); // Теперь отобразит ВСЕ грядки
+        this.renderFarm();
         this.initFirebase();
         this.calculateOfflineProgress();
         this.setupBeforeUnload();
-        
         
         setTimeout(() => {
             if (!this.auth) {
@@ -140,9 +144,7 @@ class DarkFarmGame {
                 this.initFirebase();
             }
         }, 2000);
-        
-
-        }
+    }
     
     // ========== КОНЕЦ КОНСТРУКТОРА ==========
 
@@ -1241,42 +1243,30 @@ class DarkFarmGame {
         this.updateShopItem(seedType);
     }
     
-    updateShopItem(seedType) {
-        const seedData = this.seedTypes[seedType];
-        const currentCount = this.shopCounters[seedType] || 1;
-        const totalPrice = seedData.buyPrice * currentCount;
-        const maxAffordable = Math.floor(this.darkEssence / seedData.buyPrice);
-        const canAfford = this.darkEssence >= totalPrice;
-        
-        // Обновляем input
-        const input = document.getElementById(`quantity-${seedType}`);
-        if (input) {
-            input.value = currentCount;
-            input.max = maxAffordable;
-        }
-        
-        // Обновляем подсказку
-        const hint = document.getElementById(`hint-${seedType}`);
-        if (hint) {
-            hint.textContent = `Можно купить: ${maxAffordable} шт`;
-            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
-        }
-        
-        // Обновляем общую стоимость
-        const totalElement = document.querySelector(`#quantity-${seedType}`).closest('.quantity-controls').querySelector('.quantity-total');
-        if (totalElement) {
-            totalElement.textContent = `${totalPrice} эссенции`;
-        }
-        
-        // Обновляем кнопку
-        const button = document.querySelector(`#quantity-${seedType}`).closest('.shop-item').querySelector('.buy-btn');
-        if (button) {
-            button.textContent = `Купить ${currentCount} семян за ${totalPrice} эссенции`;
-            button.disabled = !canAfford;
+    updateShopItem
+            
+            // Обновляем подсказку
+            const hint = document.getElementById(`hint-${seedType}`);
+            if (hint) {
+                hint.textContent = `Можно купить: ${maxAffordable} шт`;
+                hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
+            }
+            
+            // Обновляем общую стоимость
+            const totalElement = document.querySelector(`#quantity-${seedType}`).closest('.quantity-controls').querySelector('.quantity-total');
+            if (totalElement) {
+                totalElement.textContent = `${totalPrice} эссенции`;
+            }
+            
+            // Обновляем кнопку
+            const button = document.querySelector(`#quantity-${seedType}`).closest('.shop-item').querySelector('.buy-btn');
+            if (button) {
+                button.textContent = `Купить ${currentCount} семян за ${totalPrice} эссенции`;
+                button.disabled = !canAfford;
+            }
         }
     }
 }
-
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
@@ -1309,6 +1299,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
