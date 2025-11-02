@@ -13,7 +13,9 @@ class DarkFarmGame {
         this.initialPlots = 3;
         this.maxPlots = 31;
         this.plotPrice = 25;
-        
+        this.shopOpen = false;
+        this.inventoryOpen = false;
+        this.buildingsOpen = false;
         // Настройки обмена валюты
         this.exchangeRate = 5;
         this.exchangeAmount = 10;
@@ -316,7 +318,13 @@ class DarkFarmGame {
                 this.darkEssence = gameData.darkEssence || 100;
                 this.seedsInventory = gameData.seedsInventory || {};
                 this.harvestInventory = gameData.harvestInventory || {};
+                this.elixirInventory = gameData.elixirInventory || {};
                 this.plots = gameData.plots || [];
+                
+                // Восстанавливаем состояние построек если есть
+                if (gameData.buildings) {
+                    this.buildings = gameData.buildings;
+                }
                 
                 console.log(`Загружено ${this.plots.length} грядок из сохранения`);
                 return true;
@@ -2123,7 +2131,6 @@ class DarkFarmGame {
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
-    ame = new DarkFarmGame();
     
     document.getElementById('shopToggle').addEventListener('click', () => {
         game.toggleShop();
@@ -2136,13 +2143,14 @@ window.onload = function() {
     document.getElementById('buildingsToggle').addEventListener('click', () => {
         game.toggleBuildings();
     });
-};
     
-
-
-document.addEventListener('DOMContentLoaded', function() {
+    // Обработчики для модального окна
     const modal = document.getElementById('authModal');
     const closeBtn = document.querySelector('.close');
+    
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
     
     window.addEventListener('click', function(event) {
         if (event.target === modal) {
@@ -2155,7 +2163,6 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.classList.add('hidden');
         }
     });
-});
-
+};
 
 
