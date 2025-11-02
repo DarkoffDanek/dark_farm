@@ -158,7 +158,6 @@ body {
     transition: all 0.3s ease;
     width: 100%;
     box-sizing: border-box;
-    overflow: hidden; /* Предотвращает выход содержимого */
 }
 
 .shop.hidden, .inventory.hidden {
@@ -177,8 +176,7 @@ body {
 .shop-scroll-container,
 .inventory-scroll-container {
     width: 100%;
-    overflow-x: auto;
-    padding: 10px 5px; /* Уменьшил боковые отступы */
+    padding: 10px 0;
     box-sizing: border-box;
 }
 
@@ -241,10 +239,9 @@ body {
     flex-direction: column;
     justify-content: space-between;
     animation: fadeInUp 0.5s ease-out;
-    min-width: 0; /* Позволяет элементам сжиматься */
+    min-width: 0;
     word-wrap: break-word;
     box-sizing: border-box;
-    max-width: 100%; /* Гарантирует, что не выйдет за границы */
 }
 
 .shop-item:hover, .inventory-item:hover {
@@ -1098,43 +1095,6 @@ h1, h3 {
     border-radius: 4px;
 }
 
-/* Исправления для предотвращения выхода за границы на компьютерах */
-@media (min-width: 1024px) {
-    .shop-items, .inventory-items {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    }
-    
-    .shop-scroll-container,
-    .inventory-scroll-container {
-        overflow-x: hidden; /* Убираем горизонтальный скролл на компьютерах */
-        padding: 10px 0;
-    }
-}
-
-/* Дополнительная защита для очень широких экранов */
-@media (min-width: 1400px) {
-    .shop-items, .inventory-items {
-        grid-template-columns: repeat(4, minmax(250px, 1fr));
-    }
-}
-
-/* Гарантируем, что элементы не выходят за границы */
-.shop-item, .inventory-item {
-    max-width: 100%;
-    overflow: hidden;
-}
-
-.quantity-input {
-    max-width: 60px;
-}
-
-/* Улучшаем отображение на узких экранах */
-@media (max-width: 1023px) {
-    .shop-scroll-container,
-    .inventory-scroll-container {
-        overflow-x: auto; /* Оставляем скролл только на планшетах и телефонах */
-    }
-}
 /* Стили для счетчиков продажи в инвентаре */
 .harvest-item .quantity-total {
     color: #e94560 !important;
@@ -1254,4 +1214,3 @@ h1, h3 {
         font-size: 11px;
     }
 }
-
