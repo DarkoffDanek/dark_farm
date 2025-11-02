@@ -291,7 +291,7 @@ class DarkFarmGame {
             if (user) {
                 console.log("Пользователь вошел:", user.email);
                 this.currentUser = user;
-                document.getElementById('authButton').textContent = `🚪 ${user.email}`;
+                document.getElementById('authButton').textContent = '👤 Аккаунт';
                 this.loadGameFromCloud();
                 this.showAuthStatus("Успешный вход!", "success");
             } else {
@@ -1560,5 +1560,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
