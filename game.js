@@ -114,17 +114,22 @@ class DarkFarmGame {
         this.firebaseApp = null;
         this.db = null;
         this.auth = null;
-        
+        this.loadFromLocalStorage()
+        if (this.plots.length === 0) {
+            for (let i = 0; i < this.initialPlots; i++) {
+                this.addNewPlot();
+            }
+    }
         // Инициализация
         this.setupAuthModal();
         this.startGameLoop();
         this.initShop();
         this.updateInventoryDisplay();
-        this.renderFarm();
+        this.renderFarm(); // Теперь отобразит ВСЕ грядки
         this.initFirebase();
-        this.loadFromLocalStorage()
-        this.setupBeforeUnload();
         this.calculateOfflineProgress();
+        this.setupBeforeUnload();
+        
         
         setTimeout(() => {
             if (!this.auth) {
@@ -136,7 +141,7 @@ class DarkFarmGame {
 
         }
     
-    // ========== СИСТЕМА АККАУНТОВ ==========
+    // ========== КОНЕЦ КОНСТРУКТОРА ==========
 
         
     calculateOfflineProgress() {
@@ -245,7 +250,11 @@ class DarkFarmGame {
                 this.darkEssence = gameData.darkEssence || 100;
                 this.seedsInventory = gameData.seedsInventory || {};
                 this.harvestInventory = gameData.harvestInventory || {};
+                
+                // ✅ ВАЖНО: Загружаем ВСЕ грядки из сохранения
                 this.plots = gameData.plots || [];
+                
+                console.log(`Загружено ${this.plots.length} грядок из сохранения`);
                 return true;
             } catch (error) {
                 console.error('Ошибка загрузки из localStorage:', error);
@@ -508,19 +517,22 @@ class DarkFarmGame {
         this.seedsInventory = {};
         this.harvestInventory = {};
         this.plots = [];
+        
+        // Создаем ТОЛЬКО начальные грядки
         for (let i = 0; i < this.initialPlots; i++) {
             this.addNewPlot();
         }
+        
         this.updateDisplay();
         this.initShop();
         this.updateInventoryDisplay();
-        this.renderFarm();
+        this.renderFarm(); // ✅ Перерисовываем ферму
     }
     async loadGameFromCloud() {
         if (!this.currentUser) {
             // Пробуем загрузить из localStorage если пользователь не в системе
             if (this.loadFromLocalStorage()) {
-                this.renderFarm();
+                this.renderFarm(); // ✅ Перерисовываем ферму после загрузки
                 this.updateDisplay();
                 this.initShop();
                 this.updateInventoryDisplay();
@@ -540,10 +552,12 @@ class DarkFarmGame {
                 this.darkEssence = gameData.darkEssence || 100;
                 this.seedsInventory = gameData.seedsInventory || {};
                 this.harvestInventory = gameData.harvestInventory || {};
-                this.plots = gameData.plots || [];
+                this.plots = gameData.plots || []; // ✅ Загружаем все грядки
+    
+                console.log(`Загружено ${this.plots.length} грядок из облака`);
     
                 // Обновляем интерфейс
-                this.renderFarm();
+                this.renderFarm(); // ✅ Перерисовываем ферму
                 this.updateDisplay();
                 this.initShop();
                 this.updateInventoryDisplay();
@@ -553,11 +567,13 @@ class DarkFarmGame {
             } else {
                 // Если нет данных в облаке, пробуем загрузить из localStorage
                 this.loadFromLocalStorage();
+                this.renderFarm(); // ✅ Перерисовываем после загрузки
             }
         } catch (error) {
             console.error('Ошибка загрузки из облака:', error);
             // При ошибке загружаем из localStorage
             this.loadFromLocalStorage();
+            this.renderFarm(); // ✅ Перерисовываем после загрузки
         }
         this.startAutoSave();
     }
@@ -757,17 +773,35 @@ class DarkFarmGame {
         const farmArea = document.getElementById('farmArea');
         farmArea.innerHTML = '';
         
+        console.log(`Рендерим ${this.plots.length} грядок`);
+        
         this.plots.forEach((plot, index) => {
             const plotElement = document.createElement('div');
             plotElement.className = 'plot';
             plotElement.onclick = () => this.handlePlotClick(index);
-            plotElement.innerHTML = '🟫';
+            
+            // Отображаем правильное состояние грядки
+            if (plot.planted) {
+                const seedData = this.seedTypes[plot.type];
+                if (plot.growth >= 100) {
+                    plotElement.textContent = seedData.emoji;
+                    plotElement.className = 'plot ready';
+                } else {
+                    const growthStage = Math.floor(plot.growth / 25);
+                    const stages = ['🌱', '🪴', '🌿', seedData.emoji];
+                    plotElement.textContent = stages[growthStage] || stages[0];
+                    plotElement.className = 'plot growing';
+                }
+            } else {
+                plotElement.textContent = '🟫';
+                plotElement.className = 'plot';
+            }
+            
             farmArea.appendChild(plotElement);
         });
         
-        this.updateDisplay();
+        this.updateDisplay(); // ✅ Обновляем прогресс-бары и информацию
     }
-    
     // Обработчик клика по грядке
     handlePlotClick(plotIndex) {
         const plot = this.plots[plotIndex];
@@ -1132,6 +1166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
