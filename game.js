@@ -5,7 +5,9 @@ class DarkFarmGame {
         this.seedsInventory = {};
         this.harvestInventory = {};
         this.shopCounters = {};
-        
+        this.shopCounters = {};
+        this.exchangeCounter = 1;
+        this.plotCounter = 1;
         // Начальные грядки - 3 штуки
         this.plots = [];
         this.initialPlots = 3;
@@ -719,33 +721,101 @@ class DarkFarmGame {
     }
 
     buyEssence() {
-        if (this.souls >= this.exchangeAmount) {
-            this.souls -= this.exchangeAmount;
-            this.darkEssence += this.exchangeAmount * this.exchangeRate;
+        const totalCost = this.exchangeAmount * this.exchangeCounter;
+        const totalGain = this.exchangeAmount * this.exchangeRate * this.exchangeCounter;
+        
+        if (this.souls >= totalCost) {
+            this.souls -= totalCost;
+            this.darkEssence += totalGain;
+            
+            // Сбрасываем счетчик после покупки
+            this.exchangeCounter = 1;
+            
             this.updateDisplay();
             this.initShop();
             this.saveGameToCloud();
+            
+            // Показываем сообщение о успешном обмене
+            this.showExchangeMessage(totalCost, totalGain);
             return true;
         }
         return false;
     }
-
+    
     buyPlot() {
-        if (this.souls >= this.plotPrice && this.plots.length < this.maxPlots) {
-            this.souls -= this.plotPrice;
-            if (this.addNewPlot()) {
-                this.renderFarm();
-                this.initShop();
-                this.updateDisplay();
-                this.saveGameToCloud();
-                return true;
+        const totalCost = this.plotPrice * this.plotCounter;
+        
+        if (this.souls >= totalCost && this.plots.length + this.plotCounter <= this.maxPlots) {
+            this.souls -= totalCost;
+            
+            // Добавляем несколько грядок
+            for (let i = 0; i < this.plotCounter; i++) {
+                this.addNewPlot();
             }
-        } else if (this.plots.length >= this.maxPlots) {
+            
+            // Сбрасываем счетчик после покупки
+            this.plotCounter = 1;
+            
+            this.renderFarm();
+            this.initShop();
+            this.updateDisplay();
+            this.saveGameToCloud();
+            
+            // Показываем сообщение о успешной покупке
+            this.showPlotMessage(this.plotCounter, totalCost);
+            return true;
+        } else if (this.plots.length + this.plotCounter > this.maxPlots) {
             alert('Достигнут максимум грядок!');
         }
         return false;
     }
-
+    showExchangeMessage(cost, gain) {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        message.innerHTML = `
+            <span class="purchase-emoji">💱</span>
+            <span class="purchase-text">Обменяно ${cost} душ на ${gain} эссенции!</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 500);
+        }, 3000);
+    }
+    
+    showPlotMessage(count, cost) {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        message.innerHTML = `
+            <span class="purchase-emoji">🟫</span>
+            <span class="purchase-text">Куплено ${count} грядок за ${cost} душ!</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 500);
+        }, 3000);
+    }
     getRandomSeedDrop(seedType) {
         const seedData = this.seedTypes[seedType];
         const dropChance = seedData.dropChance;
@@ -834,9 +904,14 @@ class DarkFarmGame {
         const shopItems = document.getElementById('shopItems');
         shopItems.innerHTML = '';
         
+        // ОБМЕН ВАЛЮТЫ с счетчиком
+        const exchangeTotalCost = this.exchangeAmount * this.exchangeCounter;
+        const exchangeTotalGain = this.exchangeAmount * this.exchangeRate * this.exchangeCounter;
+        const maxExchange = Math.floor(this.souls / this.exchangeAmount);
+        const canExchange = this.souls >= exchangeTotalCost;
+        
         const exchangeShopItem = document.createElement('div');
         exchangeShopItem.className = 'shop-item exchange-shop-item';
-        const canExchange = this.souls >= this.exchangeAmount;
         
         exchangeShopItem.innerHTML = `
             <div class="item-emoji">💱</div>
@@ -844,16 +919,46 @@ class DarkFarmGame {
             <div class="item-price">${this.exchangeAmount} душ → ${this.exchangeAmount * this.exchangeRate} эссенции</div>
             <div class="item-growth">Курс: 1 душа = ${this.exchangeRate} эссенции</div>
             <div class="item-description">Обменяйте души на эссенцию для покупки семян</div>
+            
+            <div class="quantity-controls">
+                <div class="quantity-info">
+                    <span>Количество: </span>
+                    <span class="quantity-total">${exchangeTotalCost} душ → ${exchangeTotalGain} эссенции</span>
+                </div>
+                <div class="quantity-buttons">
+                    <button class="quantity-btn" onclick="game.decrementExchange()">-</button>
+                    <input type="number" 
+                           class="quantity-input" 
+                           id="quantity-exchange" 
+                           value="${this.exchangeCounter}" 
+                           min="1" 
+                           max="${maxExchange}" 
+                           onchange="game.updateExchangeFromInput()">
+                    <button class="quantity-btn" onclick="game.incrementExchange()">+</button>
+                    <button class="quantity-max-btn" onclick="game.setMaxExchange()">MAX</button>
+                </div>
+                <div class="quantity-hint" id="hint-exchange">
+                    Можно обменять: ${maxExchange} раз
+                </div>
+            </div>
+            
             <button class="buy-btn" onclick="game.buyEssence()" 
                     ${!canExchange ? 'disabled' : ''}>
-                Обменять
+                Обменять ${this.exchangeCounter} раз за ${exchangeTotalCost} душ
             </button>
         `;
         shopItems.appendChild(exchangeShopItem);
         
+        // ПОКУПКА ГРЯДОК с счетчиком
+        const plotTotalCost = this.plotPrice * this.plotCounter;
+        const maxPlotsToBuy = Math.min(
+            Math.floor(this.souls / this.plotPrice),
+            this.maxPlots - this.plots.length
+        );
+        const canBuyPlot = this.souls >= plotTotalCost && this.plots.length + this.plotCounter <= this.maxPlots;
+        
         const plotShopItem = document.createElement('div');
         plotShopItem.className = 'shop-item plot-shop-item';
-        const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots;
         
         plotShopItem.innerHTML = `
             <div class="item-emoji">🟫</div>
@@ -861,13 +966,37 @@ class DarkFarmGame {
             <div class="item-price">Цена: ${this.plotPrice} душ</div>
             <div class="item-growth">Грядок: ${this.plots.length}/${this.maxPlots}</div>
             <div class="item-description">Увеличьте площадь вашей фермы</div>
+            
+            <div class="quantity-controls">
+                <div class="quantity-info">
+                    <span>Количество: </span>
+                    <span class="quantity-total">${plotTotalCost} душ</span>
+                </div>
+                <div class="quantity-buttons">
+                    <button class="quantity-btn" onclick="game.decrementPlot()">-</button>
+                    <input type="number" 
+                           class="quantity-input" 
+                           id="quantity-plot" 
+                           value="${this.plotCounter}" 
+                           min="1" 
+                           max="${maxPlotsToBuy}" 
+                           onchange="game.updatePlotFromInput()">
+                    <button class="quantity-btn" onclick="game.incrementPlot()">+</button>
+                    <button class="quantity-max-btn" onclick="game.setMaxPlot()">MAX</button>
+                </div>
+                <div class="quantity-hint" id="hint-plot">
+                    Можно купить: ${maxPlotsToBuy} грядок
+                </div>
+            </div>
+            
             <button class="buy-btn" onclick="game.buyPlot()" 
                     ${!canBuyPlot ? 'disabled' : ''}>
-                ${this.plots.length >= this.maxPlots ? 'Максимум' : 'Купить грядку'}
+                ${this.plots.length + this.plotCounter >= this.maxPlots ? 'Максимум' : `Купить ${this.plotCounter} грядок за ${plotTotalCost} душ`}
             </button>
         `;
         shopItems.appendChild(plotShopItem);
         
+        // Семена с счетчиками (без изменений)
         Object.entries(this.seedTypes).forEach(([seedType, seedData]) => {
             const shopItem = document.createElement('div');
             shopItem.className = `shop-item ${seedData.buyPrice > 100 ? 'expensive' : 'cheap'}`;
@@ -916,7 +1045,78 @@ class DarkFarmGame {
             shopItems.appendChild(shopItem);
         });
     }
+        // Методы для управления количеством обмена валюты
+    incrementExchange() {
+        const maxAffordable = Math.floor(this.souls / this.exchangeAmount);
+        if (this.exchangeCounter < maxAffordable) {
+            this.exchangeCounter++;
+            this.updateShopExchange();
+        }
+    }
     
+    decrementExchange() {
+        if (this.exchangeCounter > 1) {
+            this.exchangeCounter--;
+            this.updateShopExchange();
+        }
+    }
+    
+    setMaxExchange() {
+        const maxAffordable = Math.floor(this.souls / this.exchangeAmount);
+        if (maxAffordable > 0) {
+            this.exchangeCounter = maxAffordable;
+            this.updateShopExchange();
+        }
+    }
+    
+    updateExchangeFromInput() {
+        const input = document.getElementById('quantity-exchange');
+        const maxAffordable = Math.floor(this.souls / this.exchangeAmount);
+        let value = parseInt(input.value) || 1;
+        
+        if (value < 1) value = 1;
+        if (value > maxAffordable) value = maxAffordable;
+        
+        this.exchangeCounter = value;
+        this.updateShopExchange();
+    }
+    
+    updateShopExchange() {
+        const totalCost = this.exchangeAmount * this.exchangeCounter;
+        const totalGain = this.exchangeAmount * this.exchangeRate * this.exchangeCounter;
+        const maxAffordable = Math.floor(this.souls / this.exchangeAmount);
+        const canAfford = this.souls >= totalCost;
+        
+        // Обновляем input
+        const input = document.getElementById('quantity-exchange');
+        if (input) {
+            input.value = this.exchangeCounter;
+            input.max = maxAffordable;
+        }
+        
+        // Обновляем подсказку
+        const hint = document.getElementById('hint-exchange');
+        if (hint) {
+            hint.textContent = `Можно обменять: ${maxAffordable} раз`;
+            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
+        }
+        
+        // Обновляем общую стоимость
+        const shopItem = document.querySelector('.exchange-shop-item');
+        if (shopItem) {
+            const totalElement = shopItem.querySelector('.quantity-total');
+            if (totalElement) {
+                totalElement.textContent = `${totalCost} душ → ${totalGain} эссенции`;
+            }
+            
+            // Обновляем кнопку
+            const button = shopItem.querySelector('.buy-btn');
+            if (button) {
+                button.textContent = `Обменять ${this.exchangeCounter} раз за ${totalCost} душ`;
+                button.disabled = !canAfford;
+            }
+        }
+    }
     clickCrop(plotIndex) {
         const plot = this.plots[plotIndex];
         if (plot.planted && plot.growth < 100) {
@@ -963,12 +1163,104 @@ class DarkFarmGame {
             }
         });
     }
+    // Методы для управления количеством покупки грядок
+    incrementPlot() {
+        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
+        const maxByPlots = this.maxPlots - this.plots.length;
+        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
+        
+        if (this.plotCounter < maxAffordable) {
+            this.plotCounter++;
+            this.updateShopPlot();
+        }
+    }
+    
+    decrementPlot() {
+        if (this.plotCounter > 1) {
+            this.plotCounter--;
+            this.updateShopPlot();
+        }
+    }
+    
+    setMaxPlot() {
+        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
+        const maxByPlots = this.maxPlots - this.plots.length;
+        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
+        
+        if (maxAffordable > 0) {
+            this.plotCounter = maxAffordable;
+            this.updateShopPlot();
+        }
+    }
+    
+    updatePlotFromInput() {
+        const input = document.getElementById('quantity-plot');
+        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
+        const maxByPlots = this.maxPlots - this.plots.length;
+        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
+        let value = parseInt(input.value) || 1;
+        
+        if (value < 1) value = 1;
+        if (value > maxAffordable) value = maxAffordable;
+        
+        this.plotCounter = value;
+        this.updateShopPlot();
+    }
+    
+    updateShopPlot() {
+        const totalCost = this.plotPrice * this.plotCounter;
+        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
+        const maxByPlots = this.maxPlots - this.plots.length;
+        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
+        const canAfford = this.souls >= totalCost && this.plotCounter <= maxByPlots;
+        
+        // Обновляем input
+        const input = document.getElementById('quantity-plot');
+        if (input) {
+            input.value = this.plotCounter;
+            input.max = maxAffordable;
+        }
+        
+        // Обновляем подсказку
+        const hint = document.getElementById('hint-plot');
+        if (hint) {
+            hint.textContent = `Можно купить: ${maxAffordable} грядок`;
+            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
+        }
+        
+        // Обновляем общую стоимость
+        const shopItem = document.querySelector('.plot-shop-item');
+        if (shopItem) {
+            const totalElement = shopItem.querySelector('.quantity-total');
+            if (totalElement) {
+                totalElement.textContent = `${totalCost} душ`;
+            }
+            
+            // Обновляем кнопку
+            const button = shopItem.querySelector('.buy-btn');
+            if (button) {
+                const isMax = this.plots.length + this.plotCounter >= this.maxPlots;
+                button.textContent = isMax ? 
+                    'Максимум' : 
+                    `Купить ${this.plotCounter} грядок за ${totalCost} душ`;
+                button.disabled = !canAfford || isMax;
+            }
+        }
+    }
     
     updateDisplay() {
         document.getElementById('souls').textContent = `Души: ${this.souls}`;
         document.getElementById('darkEssence').textContent = `Тёмная эссенция: ${this.darkEssence}`;
         
+        // Если магазин открыт, обновляем все доступные количества
         if (this.shopOpen) {
+            // Обновляем обмен валюты
+            this.updateShopExchange();
+            
+            // Обновляем покупку грядок
+            this.updateShopPlot();
+            
+            // Обновляем семена
             Object.keys(this.seedTypes).forEach(seedType => {
                 this.updateShopItem(seedType);
             });
@@ -1268,4 +1560,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
