@@ -8,6 +8,7 @@ class DarkFarmGame {
         this.shopCounters = {};
         this.exchangeCounter = 1;
         this.plotCounter = 1;
+        this.sellCounters = {};
         // Начальные грядки - 3 штуки
         this.plots = [];
         this.initialPlots = 3;
@@ -603,7 +604,227 @@ class DarkFarmGame {
     }
 
     // ========== ОСНОВНЫЕ МЕТОДЫ ИГРЫ ==========
-
+    incrementSell(seedType) {
+        if (!this.sellCounters[seedType]) {
+            this.sellCounters[seedType] = 1;
+        }
+        const maxSellable = this.harvestInventory[seedType] || 0;
+        if (this.sellCounters[seedType] < maxSellable) {
+            this.sellCounters[seedType]++;
+            this.updateInventorySellItem(seedType);
+        }
+    }
+    
+    decrementSell(seedType) {
+        if (!this.sellCounters[seedType]) {
+            this.sellCounters[seedType] = 1;
+        }
+        if (this.sellCounters[seedType] > 1) {
+            this.sellCounters[seedType]--;
+            this.updateInventorySellItem(seedType);
+        }
+    }
+    
+    setMaxSell(seedType) {
+        const maxSellable = this.harvestInventory[seedType] || 0;
+        if (maxSellable > 0) {
+            this.sellCounters[seedType] = maxSellable;
+            this.updateInventorySellItem(seedType);
+        }
+    }
+    
+    updateSellFromInput(seedType) {
+        const input = document.getElementById(`sell-quantity-${seedType}`);
+        const maxSellable = this.harvestInventory[seedType] || 0;
+        let value = parseInt(input.value) || 1;
+        
+        if (value < 1) value = 1;
+        if (value > maxSellable) value = maxSellable;
+        
+        this.sellCounters[seedType] = value;
+        this.updateInventorySellItem(seedType);
+    }
+    
+    // Обновленный метод sellHarvest с поддержкой счетчика
+    sellHarvest(seedType) {
+        const sellCount = this.sellCounters[seedType] || 1;
+        const seedData = this.seedTypes[seedType];
+        
+        if (this.harvestInventory[seedType] >= sellCount) {
+            const totalPrice = seedData.baseSellPrice * sellCount;
+            this.souls += totalPrice;
+            this.harvestInventory[seedType] -= sellCount;
+            
+            // Сбрасываем счетчик после продажи
+            this.sellCounters[seedType] = 1;
+            
+            this.updateDisplay();
+            this.updateInventoryDisplay();
+            this.saveGameToCloud();
+            
+            // Показываем сообщение о успешной продаже
+            this.showSellMessage(seedData.emoji, seedData.name, sellCount, totalPrice);
+        }
+    }
+    
+    // Метод для показа сообщения о продаже
+    showSellMessage(emoji, name, count, price) {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        message.innerHTML = `
+            <span class="purchase-emoji">💰</span>
+            <span class="purchase-text">Продано ${count} урожая ${name} за ${price} душ!</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 500);
+        }, 3000);
+    }
+    
+    // Метод для обновления отображения элемента продажи в инвентаре
+    updateInventorySellItem(seedType) {
+        const sellCount = this.sellCounters[seedType] || 1;
+        const seedData = this.seedTypes[seedType];
+        const maxSellable = this.harvestInventory[seedType] || 0;
+        const totalPrice = seedData.baseSellPrice * sellCount;
+        const canSell = maxSellable >= sellCount && sellCount > 0;
+        
+        // Обновляем input
+        const input = document.getElementById(`sell-quantity-${seedType}`);
+        if (input) {
+            input.value = sellCount;
+            input.max = maxSellable;
+        }
+        
+        // Обновляем подсказку
+        const hint = document.getElementById(`sell-hint-${seedType}`);
+        if (hint) {
+            hint.textContent = `Можно продать: ${maxSellable} шт`;
+            hint.style.color = maxSellable > 0 ? '#4CAF50' : '#f44336';
+        }
+        
+        // Обновляем общую стоимость и кнопку
+        const harvestItem = document.querySelector(`#sell-quantity-${seedType}`)?.closest('.inventory-item');
+        if (harvestItem) {
+            const totalElement = harvestItem.querySelector('.sell-total');
+            if (totalElement) {
+                totalElement.textContent = `${totalPrice} душ`;
+            }
+            
+            const button = harvestItem.querySelector('.sell-btn');
+            if (button) {
+                button.textContent = `Продать ${sellCount} шт за ${totalPrice} душ`;
+                button.disabled = !canSell;
+            }
+        }
+    }
+    
+    // Обновите метод updateInventoryDisplay для добавления счетчиков продажи
+    updateInventoryDisplay() {
+        const inventoryItems = document.getElementById('inventoryItems');
+        inventoryItems.innerHTML = '';
+        
+        let hasSeeds = false;
+        const seedsSection = document.createElement('div');
+        seedsSection.className = 'inventory-section';
+        seedsSection.innerHTML = '<h4>📦 Семена (не для продажи)</h4>';
+        
+        Object.entries(this.seedsInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasSeeds = true;
+                const seedData = this.seedTypes[seedType];
+                const seedItem = document.createElement('div');
+                seedItem.className = 'inventory-item seed-item';
+                
+                seedItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Семян: ${count}</div>
+                    <div class="item-drop-chance">Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
+                    <div class="item-info">Посадите чтобы вырастить</div>
+                `;
+                
+                seedsSection.appendChild(seedItem);
+            }
+        });
+        
+        if (hasSeeds) {
+            inventoryItems.appendChild(seedsSection);
+        }
+        
+        let hasHarvest = false;
+        const harvestSection = document.createElement('div');
+        harvestSection.className = 'inventory-section';
+        harvestSection.innerHTML = '<h4>💰 Урожай (для продажи)</h4>';
+        
+        Object.entries(this.harvestInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasHarvest = true;
+                const seedData = this.seedTypes[seedType];
+                const sellCount = this.sellCounters[seedType] || 1;
+                const totalPrice = seedData.baseSellPrice * sellCount;
+                const canSell = count >= sellCount;
+                
+                const harvestItem = document.createElement('div');
+                harvestItem.className = 'inventory-item harvest-item';
+                
+                harvestItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Урожая: ${count}</div>
+                    <div class="item-sell-price">Цена за шт: ${seedData.baseSellPrice} душ</div>
+                    
+                    <div class="quantity-controls">
+                        <div class="quantity-info">
+                            <span>Количество: </span>
+                            <span class="quantity-total sell-total">${totalPrice} душ</span>
+                        </div>
+                        <div class="quantity-buttons">
+                            <button class="quantity-btn" onclick="game.decrementSell('${seedType}')">-</button>
+                            <input type="number" 
+                                   class="quantity-input" 
+                                   id="sell-quantity-${seedType}" 
+                                   value="${sellCount}" 
+                                   min="1" 
+                                   max="${count}" 
+                                   onchange="game.updateSellFromInput('${seedType}')">
+                            <button class="quantity-btn" onclick="game.incrementSell('${seedType}')">+</button>
+                            <button class="quantity-max-btn" onclick="game.setMaxSell('${seedType}')">MAX</button>
+                        </div>
+                        <div class="quantity-hint" id="sell-hint-${seedType}">
+                            Можно продать: ${count} шт
+                        </div>
+                    </div>
+                    
+                    <button class="sell-btn" onclick="game.sellHarvest('${seedType}')" 
+                            ${!canSell ? 'disabled' : ''}>
+                        Продать ${sellCount} шт за ${totalPrice} душ
+                    </button>
+                `;
+                
+                harvestSection.appendChild(harvestItem);
+            }
+        });
+        
+        if (hasHarvest) {
+            inventoryItems.appendChild(harvestSection);
+        }
+        
+        if (!hasSeeds && !hasHarvest) {
+            inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
+        }
+    }
     buySeed(seedType) {
         const seedData = this.seedTypes[seedType];
         const quantity = this.shopCounters[seedType] || 1;
@@ -1560,6 +1781,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
