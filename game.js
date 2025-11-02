@@ -97,7 +97,66 @@ class DarkFarmGame {
                 dropChance: 0.05
             }
         };
+        this.buildings = {
+            alchemy_cauldron: {
+                name: "Алхимический Котёл",
+                emoji: "🧪",
+                price: 500,
+                description: "Превращает цветы в магические эликсиры",
+                owned: false,
+                working: false,
+                currentSeedType: null,
+                progress: 0,
+                totalTime: 0,
+                startTime: null,
+                inputSeeds: {},
+                speedMultiplier: 1.5,
+                outputMultiplier: 1.2
+            }
+        };
         
+        this.elixirInventory = {};
+        this.buildingsOpen = false;
+        
+        // Добавляем типы эликсиров (соответствуют цветам кроме теневой ягоды)
+        this.elixirTypes = {
+            'ghost_pumpkin': {
+                name: 'Призрачный Эликсир',
+                emoji: '👻',
+                baseSellPrice: 18,
+                description: 'Эфирная субстанция из призрачной тыквы'
+            },
+            'void_mushroom': {
+                name: 'Эликсир Пустоты',
+                emoji: '⚫',
+                baseSellPrice: 36,
+                description: 'Концентрированная энергия небытия'
+            },
+            'crystal_flower': {
+                name: 'Кристальный Настой',
+                emoji: '💎',
+                baseSellPrice: 58,
+                description: 'Сияющая жидкость с частицами кристаллов'
+            },
+            'blood_rose': {
+                name: 'Кровавый Отвар',
+                emoji: '🩸',
+                baseSellPrice: 86,
+                description: 'Густая тёмная жидкость с металлическим блеском'
+            },
+            'moonlight_lily': {
+                name: 'Лунный Нектар',
+                emoji: '🌙',
+                baseSellPrice: 144,
+                description: 'Мерцающий напиток с лунным сиянием'
+            },
+            'phantom_orchid': {
+                name: 'Фантомный Бальзам',
+                emoji: '👁️',
+                baseSellPrice: 216,
+                description: 'Полупрозрачная субстанция из мира духов'
+            }
+        };
         // ✅ ТЕПЕРЬ инициализируем shopCounters после seedTypes
         Object.keys(this.seedTypes).forEach(seedType => {
             this.shopCounters[seedType] = 1;
@@ -135,6 +194,7 @@ class DarkFarmGame {
         this.setupAuthModal();
         this.startGameLoop();
         this.initShop();
+        this.initBuildingsShop();
         this.updateInventoryDisplay();
         this.renderFarm();
         this.initFirebase();
@@ -977,7 +1037,440 @@ class DarkFarmGame {
             }
         }
     }
+    toggleBuildings() {
+        this.buildingsOpen = !this.buildingsOpen;
+        const buildingsShop = document.getElementById('buildingsShop');
+        buildingsShop.classList.toggle('hidden', !this.buildingsOpen);
+        
+        if (this.buildingsOpen) {
+            this.initBuildingsShop();
+        }
+        
+        if (this.buildingsOpen && (this.shopOpen || this.inventoryOpen)) {
+            if (this.shopOpen) this.toggleShop();
+            if (this.inventoryOpen) this.toggleInventory();
+        }
+    }
     
+    initBuildingsShop() {
+        const buildingsItems = document.getElementById('buildingsItems');
+        buildingsItems.innerHTML = '';
+        
+        Object.entries(this.buildings).forEach(([buildingId, building]) => {
+            const buildingItem = document.createElement('div');
+            buildingItem.className = `building-item ${building.owned ? 'owned' : ''} ${building.working ? 'working' : ''}`;
+            
+            if (!building.owned) {
+                // Показываем для покупки
+                buildingItem.innerHTML = `
+                    <div class="building-emoji">${building.emoji}</div>
+                    <div class="building-name">${building.name}</div>
+                    <div class="building-price">Цена: ${building.price} душ</div>
+                    <div class="building-description">${building.description}</div>
+                    <div class="building-stats">Ускорение роста: ×${building.speedMultiplier}</div>
+                    <div class="building-stats">Бонус к цене: ×${building.outputMultiplier}</div>
+                    <div class="building-info">Можно купить только один раз</div>
+                    <button class="buy-btn" onclick="game.buyBuilding('${buildingId}')" 
+                            ${this.souls >= building.price ? '' : 'disabled'}>
+                        Купить за ${building.price} душ
+                    </button>
+                `;
+            } else if (building.working) {
+                // Показываем прогресс работы
+                const seedData = this.seedTypes[building.currentSeedType];
+                const timeLeft = building.totalTime - (Date.now() - building.startTime);
+                const progress = Math.min(100, ((Date.now() - building.startTime) / building.totalTime) * 100);
+                
+                buildingItem.innerHTML = `
+                    <div class="building-emoji">${building.emoji}</div>
+                    <div class="building-name">${building.name}</div>
+                    <div class="building-status">🔄 В процессе: ${seedData.name}</div>
+                    
+                    <div class="building-progress">
+                        <div class="building-progress-info">
+                            Осталось: ${Math.ceil(timeLeft / 1000)} сек
+                        </div>
+                        <div class="building-progress-bar">
+                            <div class="building-progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="building-info">
+                        Создаёт: ${this.elixirTypes[building.currentSeedType].name}
+                    </div>
+                    
+                    <button class="sell-btn" onclick="game.collectBuilding('${buildingId}')" 
+                            ${progress >= 100 ? '' : 'disabled'}>
+                        ${progress >= 100 ? '🎁 Забрать эликсир!' : '⏳ Ещё не готово'}
+                    </button>
+                `;
+            } else {
+                // Показываем интерфейс для запуска
+                const availableSeeds = Object.keys(this.seedTypes)
+                    .filter(seedType => seedType !== 'shadow_berry' && this.seedsInventory[seedType] > 0);
+                
+                buildingItem.innerHTML = `
+                    <div class="building-emoji">${building.emoji}</div>
+                    <div class="building-name">${building.name}</div>
+                    <div class="building-status">✅ Готов к работе</div>
+                    <div class="building-description">Выберите цветы для переработки</div>
+                    
+                    <div class="building-inputs">
+                        <div class="building-input-label">Тип цветов:</div>
+                        <select class="building-seed-select" id="seed-type-${buildingId}">
+                            <option value="">-- Выберите цветы --</option>
+                            ${availableSeeds.map(seedType => `
+                                <option value="${seedType}">${this.seedTypes[seedType].name} (доступно: ${this.seedsInventory[seedType]})</option>
+                            `).join('')}
+                        </select>
+                        
+                        <div class="building-input-label">Количество:</div>
+                        <div class="building-quantity">
+                            <button class="building-quantity-btn" onclick="game.decrementBuildingQuantity('${buildingId}')">-</button>
+                            <input type="number" class="building-quantity-input" id="quantity-${buildingId}" value="1" min="1" max="10">
+                            <button class="building-quantity-btn" onclick="game.incrementBuildingQuantity('${buildingId}')">+</button>
+                        </div>
+                    </div>
+                    
+                    <button class="buy-btn" onclick="game.startBuilding('${buildingId}')" id="start-btn-${buildingId}">
+                        Запустить переработку
+                    </button>
+                `;
+            }
+            
+            buildingsItems.appendChild(buildingItem);
+        });
+    }
+    
+    buyBuilding(buildingId) {
+        const building = this.buildings[buildingId];
+        if (building.owned) {
+            alert('У вас уже есть эта постройка!');
+            return;
+        }
+        
+        if (this.souls >= building.price) {
+            this.souls -= building.price;
+            building.owned = true;
+            
+            this.updateDisplay();
+            this.initBuildingsShop();
+            this.saveGameToCloud();
+            
+            this.showBuildingMessage(building.emoji, building.name, building.price);
+        }
+    }
+    
+    startBuilding(buildingId) {
+        const building = this.buildings[buildingId];
+        if (!building.owned || building.working) return;
+        
+        const seedType = document.getElementById(`seed-type-${buildingId}`).value;
+        const quantity = parseInt(document.getElementById(`quantity-${buildingId}`).value) || 1;
+        
+        if (!seedType) {
+            alert('Выберите тип цветов для переработки!');
+            return;
+        }
+        
+        if (this.seedsInventory[seedType] < quantity) {
+            alert('Недостаточно выбранных семян!');
+            return;
+        }
+        
+        // Забираем семена
+        this.seedsInventory[seedType] -= quantity;
+        building.working = true;
+        building.currentSeedType = seedType;
+        building.progress = 0;
+        building.startTime = Date.now();
+        // Время переработки в 1.5 раза меньше обычного роста
+        building.totalTime = (this.seedTypes[seedType].time / building.speedMultiplier) * quantity;
+        building.inputQuantity = quantity;
+        
+        this.updateDisplay();
+        this.initBuildingsShop();
+        this.updateInventoryDisplay();
+        this.saveGameToCloud();
+    }
+    
+    collectBuilding(buildingId) {
+        const building = this.buildings[buildingId];
+        if (!building.owned || !building.working || building.progress < 100) return;
+        
+        const seedType = building.currentSeedType;
+        const elixirType = seedType; // Используем тот же ключ для эликсира
+        
+        // Создаём эликсир с бонусом к цене
+        if (!this.elixirInventory[elixirType]) {
+            this.elixirInventory[elixirType] = 0;
+        }
+        this.elixirInventory[elixirType] += building.inputQuantity;
+        
+        // Сбрасываем состояние постройки
+        building.working = false;
+        building.currentSeedType = null;
+        building.progress = 0;
+        building.startTime = null;
+        building.totalTime = 0;
+        building.inputQuantity = 0;
+        
+        this.updateDisplay();
+        this.initBuildingsShop();
+        this.updateInventoryDisplay();
+        this.saveGameToCloud();
+        
+        this.showElixirMessage(this.elixirTypes[elixirType].emoji, this.elixirTypes[elixirType].name, building.inputQuantity);
+    }
+    
+    incrementBuildingQuantity(buildingId) {
+        const input = document.getElementById(`quantity-${buildingId}`);
+        const seedType = document.getElementById(`seed-type-${buildingId}`).value;
+        
+        if (!seedType) return;
+        
+        const maxQuantity = this.seedsInventory[seedType] || 0;
+        let value = parseInt(input.value) || 1;
+        
+        if (value < maxQuantity) {
+            value++;
+            input.value = value;
+        }
+    }
+    
+    decrementBuildingQuantity(buildingId) {
+        const input = document.getElementById(`quantity-${buildingId}`);
+        let value = parseInt(input.value) || 1;
+        
+        if (value > 1) {
+            value--;
+            input.value = value;
+        }
+    }
+    
+    updateBuildings(deltaTime) {
+        Object.values(this.buildings).forEach(building => {
+            if (building.owned && building.working && building.startTime) {
+                const elapsed = Date.now() - building.startTime;
+                building.progress = Math.min(100, (elapsed / building.totalTime) * 100);
+                
+                // Автоматически собираем когда готово
+                if (building.progress >= 100) {
+                    this.initBuildingsShop(); // Обновляем интерфейс
+                }
+            }
+        });
+    }
+    
+    showBuildingMessage(emoji, name, price) {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        message.innerHTML = `
+            <span class="purchase-emoji">${emoji}</span>
+            <span class="purchase-text">Куплена постройка "${name}" за ${price} душ!</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => message.classList.add('show'), 100);
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) message.parentNode.removeChild(message);
+            }, 500);
+        }, 3000);
+    }
+    
+    showElixirMessage(emoji, name, quantity) {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        message.style.background = '#9C27B0';
+        
+        message.innerHTML = `
+            <span class="purchase-emoji">${emoji}</span>
+            <span class="purchase-text">Создано ${quantity} эликсира "${name}"!</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => message.classList.add('show'), 100);
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) message.parentNode.removeChild(message);
+            }, 500);
+        }, 3000);
+    }
+    
+    // Добавляем в метод updateDisplay() обновление построек
+    updateDisplay() {
+        // ... существующий код ...
+        
+        // Обновляем прогресс построек
+        this.updateBuildings(0);
+    }
+    
+    // Добавляем в метод updateInventoryDisplay() отображение эликсиров
+    updateInventoryDisplay() {
+        const inventoryItems = document.getElementById('inventoryItems');
+        inventoryItems.innerHTML = '';
+        
+        // ... существующий код для семян и урожая ...
+        
+        // Добавляем секцию для эликсиров
+        let hasElixirs = false;
+        const elixirsSection = document.createElement('div');
+        elixirsSection.className = 'inventory-section';
+        elixirsSection.innerHTML = '<h4>🧪 Эликсиры (из котла)</h4>';
+        
+        Object.entries(this.elixirInventory).forEach(([elixirType, count]) => {
+            if (count > 0) {
+                hasElixirs = true;
+                const elixirData = this.elixirTypes[elixirType];
+                const sellCount = this.sellCounters[elixirType] || 1;
+                const totalPrice = elixirData.baseSellPrice * sellCount;
+                const canSell = count >= sellCount;
+                
+                const elixirItem = document.createElement('div');
+                elixirItem.className = 'inventory-item harvest-item';
+                elixirItem.style.background = 'linear-gradient(135deg, #5a2d5a, #7c4a7c)';
+                
+                elixirItem.innerHTML = `
+                    <div class="item-emoji">${elixirData.emoji}</div>
+                    <div class="item-name">${elixirData.name}</div>
+                    <div class="item-count">Эликсиров: ${count}</div>
+                    <div class="item-sell-price">Цена за шт: ${elixirData.baseSellPrice} душ</div>
+                    <div class="item-description">${elixirData.description}</div>
+                    
+                    <div class="quantity-controls">
+                        <div class="quantity-info">
+                            <span>Количество: </span>
+                            <span class="quantity-total sell-total">${totalPrice} душ</span>
+                        </div>
+                        <div class="quantity-buttons">
+                            <button class="quantity-btn" onclick="game.decrementSell('${elixirType}')">-</button>
+                            <input type="number" 
+                                   class="quantity-input" 
+                                   id="sell-quantity-${elixirType}" 
+                                   value="${sellCount}" 
+                                   min="1" 
+                                   max="${count}" 
+                                   onchange="game.updateSellFromInput('${elixirType}')">
+                            <button class="quantity-btn" onclick="game.incrementSell('${elixirType}')">+</button>
+                            <button class="quantity-max-btn" onclick="game.setMaxSell('${elixirType}')">MAX</button>
+                        </div>
+                        <div class="quantity-hint" id="sell-hint-${elixirType}">
+                            Можно продать: ${count} шт
+                        </div>
+                    </div>
+                    
+                    <button class="sell-btn" onclick="game.sellElixir('${elixirType}')" 
+                            ${!canSell ? 'disabled' : ''}>
+                        Продать ${sellCount} шт за ${totalPrice} душ
+                    </button>
+                `;
+                
+                elixirsSection.appendChild(elixirItem);
+            }
+        });
+        
+        if (hasElixirs) {
+            inventoryItems.appendChild(elixirsSection);
+        }
+        
+        // ... остальной код инвентаря ...
+    }
+    
+    // Добавляем метод для продажи эликсиров
+    sellElixir(elixirType) {
+        const sellCount = this.sellCounters[elixirType] || 1;
+        const elixirData = this.elixirTypes[elixirType];
+        
+        if (this.elixirInventory[elixirType] >= sellCount) {
+            const totalPrice = elixirData.baseSellPrice * sellCount;
+            this.souls += totalPrice;
+            this.elixirInventory[elixirType] -= sellCount;
+            
+            this.sellCounters[elixirType] = 1;
+            
+            this.updateDisplay();
+            this.updateInventoryDisplay();
+            this.saveGameToCloud();
+            
+            this.showSellMessage(elixirData.emoji, elixirData.name, sellCount, totalPrice);
+        }
+    }
+    
+    // Обновляем метод saveToLocalStorage
+    saveToLocalStorage() {
+        const gameData = {
+            souls: this.souls,
+            darkEssence: this.darkEssence,
+            seedsInventory: this.seedsInventory,
+            harvestInventory: this.harvestInventory,
+            elixirInventory: this.elixirInventory,
+            plots: this.plots,
+            buildings: this.buildings,
+            lastUpdate: Date.now()
+        };
+        localStorage.setItem('darkFarm_backup', JSON.stringify(gameData));
+    }
+    
+    // Обновляем метод loadFromLocalStorage
+    loadFromLocalStorage() {
+        const saved = localStorage.getItem('darkFarm_backup');
+        if (saved) {
+            try {
+                const gameData = JSON.parse(saved);
+                this.souls = gameData.souls || 0;
+                this.darkEssence = gameData.darkEssence || 100;
+                this.seedsInventory = gameData.seedsInventory || {};
+                this.harvestInventory = gameData.harvestInventory || {};
+                this.elixirInventory = gameData.elixirInventory || {};
+                this.plots = gameData.plots || [];
+                this.buildings = gameData.buildings || {
+                    alchemy_cauldron: {
+                        name: "Алхимический Котёл",
+                        emoji: "🧪",
+                        price: 500,
+                        description: "Превращает цветы в магические эликсиры",
+                        owned: false,
+                        working: false,
+                        currentSeedType: null,
+                        progress: 0,
+                        totalTime: 0,
+                        startTime: null,
+                        inputSeeds: {},
+                        speedMultiplier: 1.5,
+                        outputMultiplier: 1.2
+                    }
+                };
+                
+                console.log(`Загружено ${this.plots.length} грядок из сохранения`);
+                return true;
+            } catch (error) {
+                console.error('Ошибка загрузки из localStorage:', error);
+            }
+        }
+        return false;
+    }
+    
+    // Добавляем в window.onload
+    window.onload = function() {
+        game = new DarkFarmGame();
+        
+        document.getElementById('shopToggle').addEventListener('click', () => {
+            game.toggleShop();
+        });
+        
+        document.getElementById('inventoryToggle').addEventListener('click', () => {
+            game.toggleInventory();
+        });
+        
+        document.getElementById('buildingsToggle').addEventListener('click', () => {
+            game.toggleBuildings();
+        });
+    };
     initShop() {
         const shopItems = document.getElementById('shopItems');
         shopItems.innerHTML = '';
@@ -1670,3 +2163,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
