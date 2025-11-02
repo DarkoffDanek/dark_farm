@@ -123,8 +123,9 @@ class DarkFarmGame {
         this.renderFarm();
         this.initFirebase();
         this.loadFromLocalStorage()
-        this.calculateOfflineProgress();
         this.setupBeforeUnload();
+        this.calculateOfflineProgress();
+        
         setTimeout(() => {
             if (!this.auth) {
                 console.warn("Firebase Auth все еще не инициализирован, пробуем снова...");
