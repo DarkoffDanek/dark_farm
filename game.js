@@ -148,11 +148,10 @@ class DarkFarmGame {
     
     // ========== КОНЕЦ КОНСТРУКТОРА ==========
 
-        
     calculateOfflineProgress() {
         const lastPlayed = localStorage.getItem('darkFarm_lastPlayed');
         if (!lastPlayed) {
-            this.saveLastPlayedTime(); // Сохраняем время первого запуска
+            this.saveLastPlayedTime();
             return;
         }
     
@@ -193,7 +192,7 @@ class DarkFarmGame {
         
         if (growthOccurred) {
             this.updateDisplay();
-            this.saveToLocalStorage(); // Сохраняем изменения
+            this.saveToLocalStorage();
         }
     }
     
@@ -205,7 +204,6 @@ class DarkFarmGame {
         if (hours > 0) timeString += `${hours}ч `;
         if (minutes > 0) timeString += `${minutes}м`;
         
-        // Считаем сколько растений выросло
         const grownPlants = this.plots.filter(plot => 
             plot.planted && plot.growth >= 100
         ).length;
@@ -255,8 +253,6 @@ class DarkFarmGame {
                 this.darkEssence = gameData.darkEssence || 100;
                 this.seedsInventory = gameData.seedsInventory || {};
                 this.harvestInventory = gameData.harvestInventory || {};
-                
-                // ✅ ВАЖНО: Загружаем ВСЕ грядки из сохранения
                 this.plots = gameData.plots || [];
                 
                 console.log(`Загружено ${this.plots.length} грядок из сохранения`);
@@ -278,6 +274,7 @@ class DarkFarmGame {
             }
         });
     }
+
     checkAuthState() {
         if (!this.auth) {
             console.error("Firebase Auth не инициализирован!");
@@ -294,8 +291,6 @@ class DarkFarmGame {
                 this.currentUser = user;
                 document.getElementById('authButton').textContent = `🚪 ${user.email}`;
                 this.loadGameFromCloud();
-                
-                // Показываем уведомление о успешном входе
                 this.showAuthStatus("Успешный вход!", "success");
             } else {
                 console.log("Пользователь вышел");
@@ -308,6 +303,7 @@ class DarkFarmGame {
             console.error("Ошибка в onAuthStateChanged:", error);
         });
     }
+
     showAuthStatus(message, type = "error") {
         const status = document.getElementById('authStatus');
         status.textContent = message;
@@ -320,6 +316,7 @@ class DarkFarmGame {
             }, 3000);
         }
     }
+
     setupAuthModal() {
         const authButton = document.getElementById('authButton');
         const modal = document.getElementById('authModal');
@@ -349,22 +346,22 @@ class DarkFarmGame {
             loginForm.classList.remove('hidden');
         });
 
-        // Обработчики форм
         document.getElementById('loginSubmit').addEventListener('click', () => this.login());
         document.getElementById('registerSubmit').addEventListener('click', () => this.register());
 
-        // Обработка нажатия Enter
         document.getElementById('loginPassword').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.login();
         });
         document.getElementById('registerPassword').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.register();
         });
+        
         setTimeout(() => {
             console.log("Firebase Config:", this.firebaseConfig);
             console.log("Firebase Auth:", this.auth);
         }, 1000);
     }
+
     initFirebase() {
         try {
             console.log("Инициализация Firebase...");
@@ -374,7 +371,6 @@ class DarkFarmGame {
                 return;
             }
     
-            // Проверяем, не инициализирован ли уже Firebase
             if (!firebase.apps.length) {
                 this.firebaseApp = firebase.initializeApp(this.firebaseConfig);
                 console.log("Firebase app инициализирован:", this.firebaseApp);
@@ -389,14 +385,12 @@ class DarkFarmGame {
             console.log("Firebase Auth инициализирован:", this.auth);
             console.log("Firebase Firestore инициализирован:", this.db);
             
-            // Теперь подписываемся на изменения аутентификации
             this.checkAuthState();
             
         } catch (error) {
             console.error("Ошибка инициализации Firebase:", error);
         }
     }
-
 
     showAuthModal() {
         document.getElementById('authModal').classList.remove('hidden');
@@ -463,21 +457,14 @@ class DarkFarmGame {
         try {
             const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
             console.log("Регистрация успешна:", userCredential.user);
-            
-            // Создаем данные для нового пользователя
             await this.createNewUserData();
-            
             this.hideAuthModal();
             status.textContent = '';
-            
         } catch (error) {
             console.error("Ошибка регистрации:", error);
             this.showAuthStatus('Ошибка регистрации: ' + error.message);
         }
     }
-        // Показываем форму входа
-
-
 
     async logout() {
         await this.saveGameToCloud();
@@ -489,6 +476,7 @@ class DarkFarmGame {
         this.stopAutoSave();
         this.resetGame();
     }
+
     async saveGameToCloud() {
         if (!this.currentUser) return;
         
@@ -507,7 +495,6 @@ class DarkFarmGame {
                 lastSaved: new Date()
             });
             
-            // ✅ Сохраняем время и резервную копию
             this.saveLastPlayedTime();
             this.saveToLocalStorage();
             
@@ -516,6 +503,7 @@ class DarkFarmGame {
             this.saveToLocalStorage();
         }
     }
+
     resetGame() {
         this.souls = 0;
         this.darkEssence = 100;
@@ -523,7 +511,6 @@ class DarkFarmGame {
         this.harvestInventory = {};
         this.plots = [];
         
-        // Создаем ТОЛЬКО начальные грядки
         for (let i = 0; i < this.initialPlots; i++) {
             this.addNewPlot();
         }
@@ -531,13 +518,13 @@ class DarkFarmGame {
         this.updateDisplay();
         this.initShop();
         this.updateInventoryDisplay();
-        this.renderFarm(); // ✅ Перерисовываем ферму
+        this.renderFarm();
     }
+
     async loadGameFromCloud() {
         if (!this.currentUser) {
-            // Пробуем загрузить из localStorage если пользователь не в системе
             if (this.loadFromLocalStorage()) {
-                this.renderFarm(); // ✅ Перерисовываем ферму после загрузки
+                this.renderFarm();
                 this.updateDisplay();
                 this.initShop();
                 this.updateInventoryDisplay();
@@ -552,49 +539,43 @@ class DarkFarmGame {
                 const userData = doc.data();
                 const gameData = userData.gameData;
                 
-                // Восстанавливаем данные из облака
                 this.souls = gameData.souls || 0;
                 this.darkEssence = gameData.darkEssence || 100;
                 this.seedsInventory = gameData.seedsInventory || {};
                 this.harvestInventory = gameData.harvestInventory || {};
-                this.plots = gameData.plots || []; // ✅ Загружаем все грядки
-    
+                this.plots = gameData.plots || [];
+
                 console.log(`Загружено ${this.plots.length} грядок из облака`);
-    
-                // Обновляем интерфейс
-                this.renderFarm(); // ✅ Перерисовываем ферму
+
+                this.renderFarm();
                 this.updateDisplay();
                 this.initShop();
                 this.updateInventoryDisplay();
-                
-                // Сохраняем резервную копию
                 this.saveToLocalStorage();
             } else {
-                // Если нет данных в облаке, пробуем загрузить из localStorage
                 this.loadFromLocalStorage();
-                this.renderFarm(); // ✅ Перерисовываем после загрузки
+                this.renderFarm();
             }
         } catch (error) {
             console.error('Ошибка загрузки из облака:', error);
-            // При ошибке загружаем из localStorage
             this.loadFromLocalStorage();
-            this.renderFarm(); // ✅ Перерисовываем после загрузки
+            this.renderFarm();
         }
         this.startAutoSave();
     }
+
     stopAutoSave() {
         if (this.autoSaveInterval) {
             clearInterval(this.autoSaveInterval);
             this.autoSaveInterval = null;
         }
     }
+
     startAutoSave() {
-        // Автосохранение каждые 30 секунд
         this.autoSaveInterval = setInterval(() => {
             if (this.currentUser) {
                 this.saveGameToCloud();
             } else {
-                // Если пользователь не авторизован, сохраняем только в localStorage
                 this.saveToLocalStorage();
                 this.saveLastPlayedTime();
             }
@@ -607,13 +588,12 @@ class DarkFarmGame {
             this.addNewPlot();
         }
         
-        // Затем создаем gameData:
         const gameData = {
             souls: 0,
             darkEssence: 100,
             seedsInventory: {},
             harvestInventory: {},
-            plots: this.plots,  // Теперь plots будет содержать грядки
+            plots: this.plots,
             lastUpdate: Date.now()
         };
         
@@ -622,7 +602,6 @@ class DarkFarmGame {
 
     // ========== ОСНОВНЫЕ МЕТОДЫ ИГРЫ ==========
 
-    // Добавьте вызов saveGameToStorage() в ключевые методы:
     buySeed(seedType) {
         const seedData = this.seedTypes[seedType];
         const quantity = this.shopCounters[seedType] || 1;
@@ -636,15 +615,13 @@ class DarkFarmGame {
             }
             this.seedsInventory[seedType] += quantity;
             
-            // Сбрасываем счетчик после покупки
             this.shopCounters[seedType] = 1;
             
             this.updateDisplay();
-            this.initShop(); // Перерисовываем магазин с обновленными данными
+            this.initShop();
             this.updateInventoryDisplay();
             this.saveGameToCloud();
             
-            // Показываем сообщение о успешной покупке
             this.showPurchaseMessage(seedData.emoji, seedData.name, quantity, totalPrice);
         }
     }
@@ -690,7 +667,7 @@ class DarkFarmGame {
             
             this.updateDisplay();
             this.updateInventoryDisplay();
-            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+            this.saveGameToCloud();
         }
     }
 
@@ -700,13 +677,11 @@ class DarkFarmGame {
             const seedType = plot.type;
             const seedData = this.seedTypes[seedType];
             
-            // Добавляем урожай в инвентарь урожая
             if (!this.harvestInventory[seedType]) {
                 this.harvestInventory[seedType] = 0;
             }
             this.harvestInventory[seedType]++;
             
-            // Получаем случайное количество семян
             const seedDrop = this.getRandomSeedDrop(seedType);
             if (seedDrop > 0) {
                 if (!this.seedsInventory[seedType]) {
@@ -716,7 +691,6 @@ class DarkFarmGame {
                 this.showDropMessage(seedData.emoji, seedData.name, seedDrop);
             }
             
-            // Сбрасываем участок
             plot.planted = false;
             plot.growth = 0;
             plot.clicks = 0;
@@ -728,7 +702,7 @@ class DarkFarmGame {
             
             this.updateDisplay();
             this.updateInventoryDisplay();
-            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+            this.saveGameToCloud();
         }
     }
 
@@ -740,7 +714,7 @@ class DarkFarmGame {
             
             this.updateDisplay();
             this.updateInventoryDisplay();
-            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+            this.saveGameToCloud();
         }
     }
 
@@ -750,7 +724,7 @@ class DarkFarmGame {
             this.darkEssence += this.exchangeAmount * this.exchangeRate;
             this.updateDisplay();
             this.initShop();
-            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+            this.saveGameToCloud();
             return true;
         }
         return false;
@@ -763,7 +737,7 @@ class DarkFarmGame {
                 this.renderFarm();
                 this.initShop();
                 this.updateDisplay();
-                this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+                this.saveGameToCloud();
                 return true;
             }
         } else if (this.plots.length >= this.maxPlots) {
@@ -772,7 +746,6 @@ class DarkFarmGame {
         return false;
     }
 
-    // Метод для генерации случайного количества семян
     getRandomSeedDrop(seedType) {
         const seedData = this.seedTypes[seedType];
         const dropChance = seedData.dropChance;
@@ -788,7 +761,6 @@ class DarkFarmGame {
         return 0;
     }
     
-    // Метод для добавления новой грядки
     addNewPlot() {
         if (this.plots.length < this.maxPlots) {
             this.plots.push({
@@ -806,7 +778,6 @@ class DarkFarmGame {
         return false;
     }
     
-    // Метод для отображения фермы
     renderFarm() {
         const farmArea = document.getElementById('farmArea');
         farmArea.innerHTML = '';
@@ -818,7 +789,6 @@ class DarkFarmGame {
             plotElement.className = 'plot';
             plotElement.onclick = () => this.handlePlotClick(index);
             
-            // Отображаем правильное состояние грядки
             if (plot.planted) {
                 const seedData = this.seedTypes[plot.type];
                 if (plot.growth >= 100) {
@@ -838,9 +808,9 @@ class DarkFarmGame {
             farmArea.appendChild(plotElement);
         });
         
-        this.updateDisplay(); // ✅ Обновляем прогресс-бары и информацию
+        this.updateDisplay();
     }
-    // Обработчик клика по грядке
+
     handlePlotClick(plotIndex) {
         const plot = this.plots[plotIndex];
         if (plot.planted) {
@@ -860,12 +830,10 @@ class DarkFarmGame {
         }
     }
     
-    // Инициализация магазина
     initShop() {
         const shopItems = document.getElementById('shopItems');
         shopItems.innerHTML = '';
         
-        // Обмен валюты (без изменений)
         const exchangeShopItem = document.createElement('div');
         exchangeShopItem.className = 'shop-item exchange-shop-item';
         const canExchange = this.souls >= this.exchangeAmount;
@@ -883,7 +851,6 @@ class DarkFarmGame {
         `;
         shopItems.appendChild(exchangeShopItem);
         
-        // Покупка грядки (без изменений)
         const plotShopItem = document.createElement('div');
         plotShopItem.className = 'shop-item plot-shop-item';
         const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots;
@@ -901,7 +868,6 @@ class DarkFarmGame {
         `;
         shopItems.appendChild(plotShopItem);
         
-        // Семена с счетчиками
         Object.entries(this.seedTypes).forEach(([seedType, seedData]) => {
             const shopItem = document.createElement('div');
             shopItem.className = `shop-item ${seedData.buyPrice > 100 ? 'expensive' : 'cheap'}`;
@@ -951,7 +917,6 @@ class DarkFarmGame {
         });
     }
     
-    // Клик по растению для ускорения роста
     clickCrop(plotIndex) {
         const plot = this.plots[plotIndex];
         if (plot.planted && plot.growth < 100) {
@@ -983,7 +948,6 @@ class DarkFarmGame {
         }
     }
     
-    // Рост растений со временем
     growCrops(deltaTime) {
         this.plots.forEach(plot => {
             if (plot.planted && plot.growth < 100) {
@@ -1000,17 +964,16 @@ class DarkFarmGame {
         });
     }
     
-    // Обновление отображения
     updateDisplay() {
         document.getElementById('souls').textContent = `Души: ${this.souls}`;
         document.getElementById('darkEssence').textContent = `Тёмная эссенция: ${this.darkEssence}`;
         
-        // Если магазин открыт, обновляем доступные количества
         if (this.shopOpen) {
             Object.keys(this.seedTypes).forEach(seedType => {
                 this.updateShopItem(seedType);
             });
         }
+        
         const plotElements = document.querySelectorAll('.plot');
         this.plots.forEach((plot, index) => {
             const plotElement = plotElements[index];
@@ -1072,7 +1035,6 @@ class DarkFarmGame {
         });
     }
     
-    // Переключение видимости магазина
     toggleShop() {
         this.shopOpen = !this.shopOpen;
         const shop = document.getElementById('shop');
@@ -1087,7 +1049,6 @@ class DarkFarmGame {
         }
     }
     
-    // Переключение видимости инвентаря
     toggleInventory() {
         this.inventoryOpen = !this.inventoryOpen;
         const inventory = document.getElementById('inventory');
@@ -1098,7 +1059,6 @@ class DarkFarmGame {
         }
     }
     
-    // Игровой цикл
     startGameLoop() {
         setInterval(() => {
             const now = Date.now();
@@ -1110,7 +1070,6 @@ class DarkFarmGame {
         }, 100);
     }
     
-    // Показ сообщения о выпадении семян
     showDropMessage(emoji, name, count) {
         const message = document.createElement('div');
         message.className = 'drop-message';
@@ -1135,12 +1094,10 @@ class DarkFarmGame {
         }, 3000);
     }
     
-    // Обновление отображения инвентаря
     updateInventoryDisplay() {
         const inventoryItems = document.getElementById('inventoryItems');
         inventoryItems.innerHTML = '';
         
-        // Показываем семена
         let hasSeeds = false;
         const seedsSection = document.createElement('div');
         seedsSection.className = 'inventory-section';
@@ -1169,7 +1126,6 @@ class DarkFarmGame {
             inventoryItems.appendChild(seedsSection);
         }
         
-        // Показываем урожай
         let hasHarvest = false;
         const harvestSection = document.createElement('div');
         harvestSection.className = 'inventory-section';
@@ -1204,6 +1160,7 @@ class DarkFarmGame {
             inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
         }
     }
+
     // Методы для управления количеством в магазине
     incrementQuantity(seedType) {
         const maxAffordable = Math.floor(this.darkEssence / this.seedTypes[seedType].buyPrice);
@@ -1243,23 +1200,37 @@ class DarkFarmGame {
         this.updateShopItem(seedType);
     }
     
-    updateShopItem
-            
-            // Обновляем подсказку
-            const hint = document.getElementById(`hint-${seedType}`);
-            if (hint) {
-                hint.textContent = `Можно купить: ${maxAffordable} шт`;
-                hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
-            }
-            
-            // Обновляем общую стоимость
-            const totalElement = document.querySelector(`#quantity-${seedType}`).closest('.quantity-controls').querySelector('.quantity-total');
+    updateShopItem(seedType) {
+        const seedData = this.seedTypes[seedType];
+        const currentCount = this.shopCounters[seedType] || 1;
+        const totalPrice = seedData.buyPrice * currentCount;
+        const maxAffordable = Math.floor(this.darkEssence / seedData.buyPrice);
+        const canAfford = this.darkEssence >= totalPrice;
+        
+        // Обновляем input
+        const input = document.getElementById(`quantity-${seedType}`);
+        if (input) {
+            input.value = currentCount;
+            input.max = maxAffordable;
+        }
+        
+        // Обновляем подсказку
+        const hint = document.getElementById(`hint-${seedType}`);
+        if (hint) {
+            hint.textContent = `Можно купить: ${maxAffordable} шт`;
+            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
+        }
+        
+        // Обновляем общую стоимость - ИСПРАВЛЕННЫЙ СЕЛЕКТОР
+        const shopItem = document.querySelector(`#quantity-${seedType}`)?.closest('.shop-item');
+        if (shopItem) {
+            const totalElement = shopItem.querySelector('.quantity-total');
             if (totalElement) {
                 totalElement.textContent = `${totalPrice} эссенции`;
             }
             
             // Обновляем кнопку
-            const button = document.querySelector(`#quantity-${seedType}`).closest('.shop-item').querySelector('.buy-btn');
+            const button = shopItem.querySelector('.buy-btn');
             if (button) {
                 button.textContent = `Купить ${currentCount} семян за ${totalPrice} эссенции`;
                 button.disabled = !canAfford;
@@ -1267,6 +1238,7 @@ class DarkFarmGame {
         }
     }
 }
+
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
@@ -1280,39 +1252,19 @@ window.onload = function() {
     });
 };
 
-// Обработчики для модального окна (добавьте в самый конец файла, после класса)
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('authModal');
     const closeBtn = document.querySelector('.close');
     
-    // Закрытие модального окна при клике вне его
     window.addEventListener('click', function(event) {
         if (event.target === modal) {
             modal.classList.add('hidden');
         }
     });
     
-    // Закрытие по ESC
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             modal.classList.add('hidden');
         }
     });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
