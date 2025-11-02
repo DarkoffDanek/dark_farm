@@ -120,7 +120,6 @@ class DarkFarmGame {
         };
         
         this.elixirInventory = {};
-        this.buildingsOpen = false;
         
         // Добавляем типы эликсиров (соответствуют цветам кроме теневой ягоды)
         this.elixirTypes = {
@@ -377,7 +376,7 @@ class DarkFarmGame {
             seedsInventory: this.seedsInventory,
             harvestInventory: this.harvestInventory,
             plots: this.plots,
-            lastUpdate: Date.now()
+            lastUpdate: Date.now(),
             connectedPlots: this.connectedPlots,
             cauldronMode: this.cauldronMode,
             currentSeedTypeForCauldron: this.currentSeedTypeForCauldron
@@ -466,7 +465,20 @@ class DarkFarmGame {
             }, 3000);
         }
     }
-
+    toggleBuildings() {
+        this.buildingsOpen = !this.buildingsOpen;
+        const buildings = document.getElementById('buildings');
+        buildings.classList.toggle('hidden', !this.buildingsOpen);
+        
+        if (this.buildingsOpen) {
+            this.initBuildingsShop();
+        }
+        
+        if (this.buildingsOpen && (this.shopOpen || this.inventoryOpen)) {
+            if (this.shopOpen) this.toggleShop();
+            if (this.inventoryOpen) this.toggleInventory();
+        }
+    }
     setupAuthModal() {
         const authButton = document.getElementById('authButton');
         const modal = document.getElementById('authModal');
@@ -1387,9 +1399,10 @@ class DarkFarmGame {
                 const elapsed = Date.now() - building.startTime;
                 building.progress = Math.min(100, (elapsed / building.totalTime) * 100);
                 
-                // Автоматически собираем когда готово
+                // Автоматически собираем когда готово и сохраняем
                 if (building.progress >= 100) {
-                    this.initBuildingsShop(); // Обновляем интерфейс
+                    this.initBuildingsShop();
+                    this.saveGameToCloud(); // Добавь эту строку
                 }
             }
         });
@@ -2302,6 +2315,7 @@ window.onload = function() {
         }
     });
 };
+
 
 
 
