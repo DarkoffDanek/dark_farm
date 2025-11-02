@@ -158,6 +158,7 @@ body {
     transition: all 0.3s ease;
     width: 100%;
     box-sizing: border-box;
+    overflow: hidden; /* Предотвращает выход содержимого */
 }
 
 .shop.hidden, .inventory.hidden {
@@ -177,7 +178,8 @@ body {
 .inventory-scroll-container {
     width: 100%;
     overflow-x: auto;
-    padding: 10px 0;
+    padding: 10px 5px; /* Уменьшил боковые отступы */
+    box-sizing: border-box;
 }
 
 /* Адаптивная сетка для магазина и инвентаря */
@@ -189,6 +191,8 @@ body {
     transition: grid-template-columns 0.3s ease;
     justify-content: center;
     min-width: min-content;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Большие экраны (компьютеры) - 4 колонки */
@@ -239,6 +243,8 @@ body {
     animation: fadeInUp 0.5s ease-out;
     min-width: 0; /* Позволяет элементам сжиматься */
     word-wrap: break-word;
+    box-sizing: border-box;
+    max-width: 100%; /* Гарантирует, что не выйдет за границы */
 }
 
 .shop-item:hover, .inventory-item:hover {
@@ -319,6 +325,7 @@ body {
     width: 100%;
     transition: all 0.3s;
     font-size: 0.9em;
+    box-sizing: border-box;
 }
 
 .buy-btn:hover {
@@ -1089,4 +1096,42 @@ h1, h3 {
 .inventory-scroll-container::-webkit-scrollbar-thumb {
     background: #5d3891;
     border-radius: 4px;
+}
+
+/* Исправления для предотвращения выхода за границы на компьютерах */
+@media (min-width: 1024px) {
+    .shop-items, .inventory-items {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    
+    .shop-scroll-container,
+    .inventory-scroll-container {
+        overflow-x: hidden; /* Убираем горизонтальный скролл на компьютерах */
+        padding: 10px 0;
+    }
+}
+
+/* Дополнительная защита для очень широких экранов */
+@media (min-width: 1400px) {
+    .shop-items, .inventory-items {
+        grid-template-columns: repeat(4, minmax(250px, 1fr));
+    }
+}
+
+/* Гарантируем, что элементы не выходят за границы */
+.shop-item, .inventory-item {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.quantity-input {
+    max-width: 60px;
+}
+
+/* Улучшаем отображение на узких экранах */
+@media (max-width: 1023px) {
+    .shop-scroll-container,
+    .inventory-scroll-container {
+        overflow-x: auto; /* Оставляем скролл только на планшетах и телефонах */
+    }
 }
