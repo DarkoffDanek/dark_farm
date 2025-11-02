@@ -29,72 +29,72 @@ class DarkFarmGame {
             'shadow_berry': {
                 name: 'Теневая ягода',
                 emoji: '🍇',
-                time: 10000,
+                time: 20000,
                 clicks: 5,
                 buyPrice: 10,
-                baseSellPrice: 5,
+                baseSellPrice: 4,
                 description: 'Быстрорастущая, но дешёвая',
-                dropChance: 0.6
+                dropChance: 0.5
             },
             'ghost_pumpkin': {
                 name: 'Призрачная тыква',
                 emoji: '🎃',
-                time: 20000,
+                time: 120000,
                 clicks: 8,
                 buyPrice: 25,
-                baseSellPrice: 15,
+                baseSellPrice: 10,
                 description: 'Средняя скорость, хорошая цена',
-                dropChance: 0.5
+                dropChance: 0.35
             },
             'void_mushroom': {
                 name: 'Гриб пустоты',
                 emoji: '🍄',
-                time: 30000,
+                time: 900000,
                 clicks: 12,
                 buyPrice: 50,
-                baseSellPrice: 35,
+                baseSellPrice: 20,
                 description: 'Растёт медленно, но дорого стоит',
-                dropChance: 0.4
+                dropChance: 0.3
             },
             'crystal_flower': {
                 name: 'Хрустальный цветок',
                 emoji: '🌷',
-                time: 45000,
+                time: 2400000,
                 clicks: 15,
                 buyPrice: 80,
-                baseSellPrice: 60,
+                baseSellPrice: 32,
                 description: 'Ценный, но требует терпения',
-                dropChance: 0.35
+                dropChance: 0.28
             },
             'blood_rose': {
                 name: 'Кровавая роза',
                 emoji: '🌹',
-                time: 60000,
+                time: 5400000,
                 clicks: 20,
                 buyPrice: 120,
-                baseSellPrice: 100,
+                baseSellPrice: 48,
                 description: 'Очень редкая и дорогая',
-                dropChance: 0.3
+                dropChance: 0.15
             },
             'moonlight_lily': {
                 name: 'Лунная лилия',
                 emoji: '🌸',
-                time: 90000,
+                time: 10800000,
                 clicks: 25,
                 buyPrice: 200,
-                baseSellPrice: 180,
+                baseSellPrice: 80,
                 description: 'Цветёт только в лунном свете',
-                dropChance: 0.25
+                dropChance: 0.1
             },
             'phantom_orchid': {
                 name: 'Фантомная орхидея',
                 emoji: '💮',
-                time: 120000,
+                time: 21600000,
                 clicks: 30,
                 buyPrice: 300,
-                baseSellPrice: 250,
+                baseSellPrice: 120,
                 description: 'Легендарное растение из иного мира',
-                dropChance: 0.2
+                dropChance: 0.05
             }
         };
         
@@ -1560,6 +1560,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
