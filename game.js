@@ -30,7 +30,7 @@ class DarkFarmGame {
                 name: 'Теневая ягода',
                 emoji: '🍇',
                 time: 20000,
-                clicks: 5,
+                clicks: 7,
                 buyPrice: 10,
                 baseSellPrice: 4,
                 description: 'Быстрорастущая, но дешёвая',
@@ -40,7 +40,7 @@ class DarkFarmGame {
                 name: 'Призрачная тыква',
                 emoji: '🎃',
                 time: 120000,
-                clicks: 8,
+                clicks: 40,
                 buyPrice: 25,
                 baseSellPrice: 10,
                 description: 'Средняя скорость, хорошая цена',
@@ -50,7 +50,7 @@ class DarkFarmGame {
                 name: 'Гриб пустоты',
                 emoji: '🍄',
                 time: 900000,
-                clicks: 12,
+                clicks: 300,
                 buyPrice: 50,
                 baseSellPrice: 20,
                 description: 'Растёт медленно, но дорого стоит',
@@ -60,7 +60,7 @@ class DarkFarmGame {
                 name: 'Хрустальный цветок',
                 emoji: '🌷',
                 time: 2400000,
-                clicks: 15,
+                clicks: 800,
                 buyPrice: 80,
                 baseSellPrice: 32,
                 description: 'Ценный, но требует терпения',
@@ -70,7 +70,7 @@ class DarkFarmGame {
                 name: 'Кровавая роза',
                 emoji: '🌹',
                 time: 5400000,
-                clicks: 20,
+                clicks: 1800,
                 buyPrice: 120,
                 baseSellPrice: 48,
                 description: 'Очень редкая и дорогая',
@@ -80,7 +80,7 @@ class DarkFarmGame {
                 name: 'Лунная лилия',
                 emoji: '🌸',
                 time: 10800000,
-                clicks: 25,
+                clicks: 3600,
                 buyPrice: 200,
                 baseSellPrice: 80,
                 description: 'Цветёт только в лунном свете',
@@ -90,7 +90,7 @@ class DarkFarmGame {
                 name: 'Фантомная орхидея',
                 emoji: '💮',
                 time: 21600000,
-                clicks: 30,
+                clicks: 7200,
                 buyPrice: 300,
                 baseSellPrice: 120,
                 description: 'Легендарное растение из иного мира',
@@ -1560,6 +1560,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
