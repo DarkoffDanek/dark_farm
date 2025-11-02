@@ -11,7 +11,7 @@ class DarkFarmGame {
         // Начальные грядки - 3 штуки
         this.plots = [];
         this.initialPlots = 3;
-        this.maxPlots = 30;
+        this.maxPlots = 31;
         this.plotPrice = 25;
         
         // Настройки обмена валюты
@@ -1560,6 +1560,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
