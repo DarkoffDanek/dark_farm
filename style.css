@@ -1214,3 +1214,245 @@ h1, h3 {
         font-size: 11px;
     }
 }
+
+/* Добавляем в style.css */
+/* Стили для магазина построек */
+.buildings-shop {
+    background: #16213e;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 2px solid #394867;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.buildings-shop.hidden {
+    display: none;
+}
+
+.buildings-shop h3 {
+    color: #e94560;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+    text-shadow: 0 0 10px rgba(233, 69, 96, 0.3);
+}
+
+.buildings-scroll-container {
+    width: 100%;
+    padding: 10px 0;
+    box-sizing: border-box;
+}
+
+.buildings-items {
+    display: grid;
+    gap: 15px;
+    margin-top: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    justify-content: center;
+    min-width: min-content;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.building-item {
+    background: linear-gradient(135deg, #2d3948, #4a5a7a);
+    border: 2px solid #5d3891;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.building-item:hover {
+    background: linear-gradient(135deg, #3a495a, #5b6b8b);
+    transform: translateY(-3px);
+    border-color: #e94560;
+    box-shadow: 0 5px 15px rgba(233, 69, 96, 0.2);
+}
+
+.building-item.owned {
+    background: linear-gradient(135deg, #2d5a2d, #4a7c4a);
+    border-color: #4a7c4a;
+}
+
+.building-item.working {
+    background: linear-gradient(135deg, #5a2d5a, #7c4a7c);
+    border-color: #e94560;
+    animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+.building-emoji {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.building-name {
+    font-weight: bold;
+    color: #e94560;
+    margin-bottom: 8px;
+    font-size: 1.2em;
+}
+
+.building-price {
+    color: #c9c9c9;
+    font-size: 1em;
+    margin: 5px 0;
+}
+
+.building-description {
+    color: #a9a9a9;
+    font-size: 0.9em;
+    margin: 8px 0;
+    line-height: 1.4;
+}
+
+.building-stats {
+    color: #4CAF50;
+    font-size: 0.85em;
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+.building-info {
+    color: #c9c9c9;
+    font-size: 0.8em;
+    font-style: italic;
+    margin: 8px 0;
+}
+
+.building-status {
+    margin: 10px 0;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.building-progress {
+    margin: 10px 0;
+}
+
+.building-progress-info {
+    font-size: 0.8em;
+    color: #c9c9c9;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.building-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.building-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e94560, #ff6b95);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.building-inputs {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+}
+
+.building-input-label {
+    font-size: 0.9em;
+    color: #c9c9c9;
+    margin-bottom: 5px;
+}
+
+.building-seed-select {
+    width: 100%;
+    padding: 8px;
+    background: #0f3460;
+    border: 1px solid #394867;
+    border-radius: 5px;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.building-seed-select:focus {
+    outline: none;
+    border-color: #5d3891;
+}
+
+.building-quantity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.building-quantity-input {
+    width: 60px;
+    padding: 5px;
+    background: #1a1a2e;
+    border: 1px solid #394867;
+    border-radius: 3px;
+    color: white;
+    text-align: center;
+}
+
+.building-quantity-btn {
+    background: #5d3891;
+    border: none;
+    border-radius: 3px;
+    color: white;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.building-quantity-btn:hover:not(:disabled) {
+    background: #6d4891;
+}
+
+.building-quantity-btn:disabled {
+    background: #3a2d4a;
+    cursor: not-allowed;
+}
+
+/* Адаптивность для построек */
+@media (max-width: 768px) {
+    .buildings-items {
+        grid-template-columns: 1fr;
+    }
+    
+    .building-item {
+        padding: 15px;
+        min-height: 200px;
+    }
+    
+    .building-emoji {
+        font-size: 2em;
+    }
+}
+
+@media (max-width: 480px) {
+    .building-item {
+        padding: 12px;
+        min-height: 180px;
+    }
+    
+    .building-name {
+        font-size: 1.1em;
+    }
+    
+    .building-description {
+        font-size: 0.85em;
+    }
+}
