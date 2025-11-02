@@ -127,6 +127,122 @@ class DarkFarmGame {
                 this.initFirebase();
             }
         }, 2000);
+    calculateOfflineProgress() {
+        const lastPlayed = localStorage.getItem('darkFarm_lastPlayed');
+        if (!lastPlayed) return;
+        
+            const now = Date.now();
+            const offlineTime = now - parseInt(lastPlayed);
+            const maxOfflineTime = 24 * 60 * 60 * 1000; // Максимум 24 часа
+            
+            if (offlineTime > 10000 && offlineTime < maxOfflineTime) { // Минимум 10 секунд офлайна
+                this.processOfflineGrowth(offlineTime);
+                this.showOfflineProgressMessage(offlineTime);
+            }
+            
+            // Обновляем время последней игры
+            this.saveLastPlayedTime();
+        }
+        
+        // Обработка роста растений за время офлайна
+        processOfflineGrowth(offlineTime) {
+            this.plots.forEach(plot => {
+                if (plot.planted && plot.growth < 100) {
+                    // Вычисляем прогресс за офлайн время
+                    const growthPerMs = 100 / plot.totalGrowthTime;
+                    const offlineGrowth = growthPerMs * offlineTime;
+                    
+                    plot.growth = Math.min(100, plot.growth + offlineGrowth);
+                    plot.remainingTime = Math.max(0, plot.remainingTime - offlineTime);
+                    
+                    // Если растение выросло за время офлайна
+                    if (plot.growth >= 100) {
+                        plot.growth = 100;
+                        plot.remainingTime = 0;
+                    }
+                }
+            });
+            
+            this.updateDisplay();
+        }
+        
+        // Показ сообщения о офлайн прогрессе
+        showOfflineProgressMessage(offlineTime) {
+            const hours = Math.floor(offlineTime / (1000 * 60 * 60));
+            const minutes = Math.floor((offlineTime % (1000 * 60 * 60)) / (1000 * 60));
+            
+            let timeString = '';
+            if (hours > 0) {
+                timeString += `${hours}ч `;
+            }
+            if (minutes > 0) {
+                timeString += `${minutes}м`;
+            }
+            
+            const message = document.createElement('div');
+            message.className = 'offline-progress-message';
+            message.innerHTML = `
+                <div class="offline-header">⚡ Офлайн прогресс</div>
+                <div class="offline-time">Вы отсутствовали: ${timeString}</div>
+                <div class="offline-info">Ваши растения выросли за время вашего отсутствия!</div>
+            `;
+            
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                message.classList.remove('show');
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 500);
+            }, 5000);
+        }
+        
+        // Сохранение времени последней игры
+        saveLastPlayedTime() {
+            localStorage.setItem('darkFarm_lastPlayed', Date.now().toString());
+        }
+        
+        // Сохранение данных игры в localStorage как резервная копия
+        saveToLocalStorage() {
+            const gameData = {
+                souls: this.souls,
+                darkEssence: this.darkEssence,
+                seedsInventory: this.seedsInventory,
+                harvestInventory: this.harvestInventory,
+                plots: this.plots,
+                lastUpdate: Date.now()
+            };
+            
+            localStorage.setItem('darkFarm_backup', JSON.stringify(gameData));
+        }
+        
+        // Загрузка из localStorage (как fallback)
+        loadFromLocalStorage() {
+            const saved = localStorage.getItem('darkFarm_backup');
+            if (saved) {
+                try {
+                    const gameData = JSON.parse(saved);
+                    
+                    this.souls = gameData.souls || 0;
+                    this.darkEssence = gameData.darkEssence || 100;
+                    this.seedsInventory = gameData.seedsInventory || {};
+                    this.harvestInventory = gameData.harvestInventory || {};
+                    this.plots = gameData.plots || [];
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка загрузки из localStorage:', error);
+                }
+            }
+            return false;
+        }
+        this.calculateOfflineProgress();
     }
 
     // ========== СИСТЕМА АККАУНТОВ ==========
@@ -346,6 +462,7 @@ class DarkFarmGame {
         this.resetGame();
     }
     async saveGameToCloud() {
+        // Сохраняем в Firebase
         if (!this.currentUser) return;
         
         const gameData = {
@@ -362,8 +479,15 @@ class DarkFarmGame {
                 gameData: gameData,
                 lastSaved: new Date()
             });
+            
+            // ДОБАВЬТЕ: Сохраняем время последней игры и резервную копию
+            this.saveLastPlayedTime();
+            this.saveToLocalStorage();
+            
         } catch (error) {
-            console.error('Ошибка сохранения:', error);
+            console.error('Ошибка сохранения в облако:', error);
+            // При ошибке сохраняем только в localStorage
+            this.saveToLocalStorage();
         }
     }
     resetGame() {
@@ -381,7 +505,16 @@ class DarkFarmGame {
         this.renderFarm();
     }
     async loadGameFromCloud() {
-        if (!this.currentUser) return;
+        if (!this.currentUser) {
+            // Пробуем загрузить из localStorage если пользователь не в системе
+            if (this.loadFromLocalStorage()) {
+                this.renderFarm();
+                this.updateDisplay();
+                this.initShop();
+                this.updateInventoryDisplay();
+            }
+            return;
+        }
         
         try {
             const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
@@ -390,31 +523,32 @@ class DarkFarmGame {
                 const userData = doc.data();
                 const gameData = userData.gameData;
                 
-                // Восстановите все данные игры из gameData
+                // Восстанавливаем данные из облака
                 this.souls = gameData.souls || 0;
                 this.darkEssence = gameData.darkEssence || 100;
                 this.seedsInventory = gameData.seedsInventory || {};
                 this.harvestInventory = gameData.harvestInventory || {};
                 this.plots = gameData.plots || [];
-
-                // Обновите интерфейс
+    
+                // Обновляем интерфейс
                 this.renderFarm();
                 this.updateDisplay();
                 this.initShop();
                 this.updateInventoryDisplay();
+                
+                // Сохраняем резервную копию
+                this.saveToLocalStorage();
+            } else {
+                // Если нет данных в облаке, пробуем загрузить из localStorage
+                this.loadFromLocalStorage();
             }
         } catch (error) {
-            console.error('Ошибка загрузки:', error);
+            console.error('Ошибка загрузки из облака:', error);
+            // При ошибке загружаем из localStorage
+            this.loadFromLocalStorage();
         }
         this.startAutoSave();
     }
-    startAutoSave() {
-            // Автосохранение каждые 30 секунд
-        this.autoSaveInterval = setInterval(() => {
-            this.saveGameToCloud();
-        }, 30000);
-    }
-
     stopAutoSave() {
         if (this.autoSaveInterval) {
             clearInterval(this.autoSaveInterval);
@@ -974,6 +1108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
