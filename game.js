@@ -753,11 +753,12 @@ class DarkFarmGame {
     }
     
     // Обновите метод updateInventoryDisplay для добавления счетчиков продажи
-    updateInventoryDisplay(includePotions = false) {
+    updateInventoryDisplay() {
         const inventoryItems = document.getElementById("inventoryItems");
         if (!inventoryItems) return;
         inventoryItems.innerHTML = "";
     
+        // Отображаем растения
         Object.entries(this.harvestInventory).forEach(([item, count]) => {
             if (count <= 0) return;
     
@@ -765,7 +766,7 @@ class DarkFarmGame {
             const seedData = this.seedTypes[item];
             const isPotion = this.potionPrices && this.potionPrices[item];
     
-            if (!seedData && !isPotion) return; // пропускаем неизвестное
+            if (!seedData && !isPotion) return;
     
             const emoji = seedData?.emoji || '🧪';
             const name = seedData?.name || item;
@@ -783,6 +784,11 @@ class DarkFarmGame {
             `;
             inventoryItems.appendChild(div);
         });
+    
+        // Если нет предметов, показываем сообщение
+        if (inventoryItems.children.length === 0) {
+            inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
+        }
     }
 
     buySeed(seedType) {
@@ -1938,7 +1944,7 @@ class DarkFarmGame {
     }
 
     
-        // Просмотр накопленных зелий
+            // Просмотр накопленных зелий
     openPotionStorage() {
         const modal = document.createElement('div');
         modal.className = 'modal cauldron-modal';
@@ -1953,8 +1959,9 @@ class DarkFarmGame {
     
         const list = modal.querySelector('#potionList');
         const potions = Object.entries(this.cauldron.storedPotions);
+        
         if (potions.length === 0) {
-            list.innerHTML = '<p>Пока нет сваренных зелий.</p>';
+            list.innerHTML = '<p style="text-align: center; color: #888;">Пока нет сваренных зелий.</p>';
         } else {
             potions.forEach(([name, count]) => {
                 const item = document.createElement('div');
@@ -1962,18 +1969,27 @@ class DarkFarmGame {
                 item.innerHTML = `
                     <span class="name">${name}</span>
                     <div class="quantity-controls">
-                        <span>x${count}</span>
+                        <span class="count">x${count}</span>
                         <button class="transfer-btn">↩️ Забрать</button>
                     </div>
                 `;
+                
                 item.querySelector('.transfer-btn').addEventListener('click', () => {
                     this.transferPotionToInventory(name);
-                    this.saveCauldron();
-                    item.remove();
-                    if (Object.keys(this.cauldron.storedPotions).length === 0) {
-                        list.innerHTML = '<p>Все зелья забраны в инвентарь.</p>';
+                    
+                    // Обновляем список после переноса
+                    const remainingCount = this.cauldron.storedPotions[name] || 0;
+                    if (remainingCount > 0) {
+                        item.querySelector('.count').textContent = `x${remainingCount}`;
+                    } else {
+                        item.remove();
+                        // Если больше нет зелий, показываем сообщение
+                        if (Object.keys(this.cauldron.storedPotions).length === 0) {
+                            list.innerHTML = '<p style="text-align: center; color: #888;">Все зелья забраны в инвентарь.</p>';
+                        }
                     }
                 });
+                
                 list.appendChild(item);
             });
         }
@@ -1994,8 +2010,9 @@ class DarkFarmGame {
         // Удаляем из котла
         delete this.cauldron.storedPotions[potionName];
     
-        // 🔧 Обновляем отображение и сохраняем
-        this.updateInventoryDisplay(true); // передаём true, чтобы показать и зелья
+        // Обновляем отображение и сохраняем
+        this.updateInventoryDisplay();
+        this.updateCauldronUI();
         this.saveCauldron();
         this.saveGameToCloud();
         this.showMessage('💎', `${potionName} добавлено в инвентарь!`);
@@ -2080,6 +2097,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
