@@ -1499,6 +1499,7 @@ window.onload = function() {
             authModal.classList.add('hidden');
         }
     });
-};
+}
+
 
 
