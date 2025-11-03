@@ -159,7 +159,7 @@ class DarkFarmGame {
         cauldron.className = `cauldron-building ${!this.alchemyCauldron.owned ? 'locked' : ''} ${this.alchemyCauldron.working ? 'working' : ''} ${this.alchemyCauldron.progress >= 100 ? 'ready' : ''}`;
     
         if (!this.alchemyCauldron.owned) {
-            // Котел не куплен
+            // Котел не куплен - код без изменений
             cauldron.innerHTML = `
                 <div class="cauldron-emoji">🧪</div>
                 <div class="cauldron-name">Алхимический Котёл</div>
@@ -173,12 +173,12 @@ class DarkFarmGame {
                 </button>
             `;
         } else if (this.alchemyCauldron.working) {
-            // Котел работает
+            // Котел работает - ИСПРАВЛЕНО: используем progress из состояния
             const recipe = this.elixirRecipes[this.alchemyCauldron.currentRecipe];
             if (!recipe) return;
             
             const timeLeft = Math.max(0, this.alchemyCauldron.endTime - Date.now());
-            const progress = Math.min(100, ((Date.now() - this.alchemyCauldron.startTime) / this.alchemyCauldron.totalTime) * 100);
+            const progress = this.alchemyCauldron.progress; // Используем сохранённый прогресс
             
             cauldron.innerHTML = `
                 <div class="cauldron-emoji">🧪</div>
@@ -204,7 +204,7 @@ class DarkFarmGame {
                 </button>
             `;
         } else {
-            // Котел готов к работе
+            // Котел готов к работе - ИСПРАВЛЕНО: правильное обновление количества
             const availableRecipes = Object.keys(this.elixirRecipes)
                 .filter(recipeType => (this.harvestInventory[recipeType] || 0) > 0);
             
@@ -228,7 +228,7 @@ class DarkFarmGame {
                     <div class="cauldron-input-label">Количество цветов:</div>
                     <div class="cauldron-quantity">
                         <button class="cauldron-quantity-btn" onclick="game.decrementCauldronQuantity()">-</button>
-                        <input type="number" class="cauldron-quantity-input" id="cauldronQuantity" value="1" min="1" max="10">
+                        <input type="number" class="cauldron-quantity-input" id="cauldronQuantity" value="1" min="1" max="10" onchange="game.updateCauldronMaxQuantity()">
                         <button class="cauldron-quantity-btn" onclick="game.incrementCauldronQuantity()">+</button>
                     </div>
                 </div>
@@ -238,8 +238,10 @@ class DarkFarmGame {
                 </button>
             `;
             
-            // Обновляем максимальное количество
-            this.updateCauldronMaxQuantity();
+            // Обновляем максимальное количество сразу после создания
+            setTimeout(() => {
+                this.updateCauldronMaxQuantity();
+            }, 0);
         }
         
         buildingsContainer.appendChild(cauldron);
@@ -267,11 +269,17 @@ class DarkFarmGame {
         if (!recipeTypeSelect || !quantityInput) return;
         
         const recipeType = recipeTypeSelect.value;
+        
         if (recipeType && this.harvestInventory[recipeType]) {
             const maxQuantity = Math.min(10, this.harvestInventory[recipeType]);
             quantityInput.max = maxQuantity;
-            if (parseInt(quantityInput.value) > maxQuantity) {
+            
+            // Убедимся, что текущее значение не превышает максимум
+            let currentValue = parseInt(quantityInput.value) || 1;
+            if (currentValue > maxQuantity) {
                 quantityInput.value = maxQuantity;
+            } else if (currentValue < 1) {
+                quantityInput.value = 1;
             }
         } else {
             quantityInput.max = 1;
@@ -295,6 +303,8 @@ class DarkFarmGame {
             value++;
             input.value = value;
         }
+        
+        this.updateCauldronMaxQuantity(); // Обновляем максимум после изменения
     }
     
     decrementCauldronQuantity() {
@@ -307,6 +317,8 @@ class DarkFarmGame {
             value--;
             input.value = value;
         }
+        
+        this.updateCauldronMaxQuantity(); // Обновляем максимум после изменения
     }
     
     startBrewing() {
@@ -328,6 +340,12 @@ class DarkFarmGame {
             return;
         }
         
+        // Проверяем, не работает ли уже котел
+        if (this.alchemyCauldron.working) {
+            this.showMessage('⚠️', 'Котёл уже работает! Дождитесь окончания текущей варки.', 'error');
+            return;
+        }
+        
         // Забираем цветы из инвентаря
         this.harvestInventory[recipeType] -= quantity;
         
@@ -338,20 +356,23 @@ class DarkFarmGame {
         this.alchemyCauldron.progress = 0;
         this.alchemyCauldron.startTime = Date.now();
         this.alchemyCauldron.totalTime = recipe.brewingTime * quantity;
-        this.alchemyCauldron.endTime = Date.now() + (recipe.brewingTime * quantity);
         this.alchemyCauldron.inputQuantity = quantity;
         this.alchemyCauldron.outputQuantity = quantity * recipe.outputMultiplier;
+        this.alchemyCauldron.endTime = Date.now() + (recipe.brewingTime * quantity);
         
         this.updateDisplay();
         this.renderBuildings();
         this.updateInventoryDisplay();
         this.saveToLocalStorage();
         
-        this.showMessage('🔥', `Начата варка ${recipe.name}!`,'success');
+        this.showMessage('🔥', `Начата варка ${recipe.name}!`, 'success');
     }
     
     collectElixir() {
-        if (!this.alchemyCauldron.working || this.alchemyCauldron.progress < 100) return;
+        if (!this.alchemyCauldron.working || this.alchemyCauldron.progress < 100) {
+            this.showMessage('⚠️', 'Эликсир ещё не готов!', 'error');
+            return;
+        }
         
         const recipeType = this.alchemyCauldron.currentRecipe;
         const recipe = this.elixirRecipes[recipeType];
@@ -381,14 +402,15 @@ class DarkFarmGame {
         
         this.showMessage(recipe.emoji, `Создано ${this.alchemyCauldron.outputQuantity} эликсира ${recipe.name}!`, 'success');
     }
-    
     updateCauldronProgress() {
         if (this.alchemyCauldron.working && this.alchemyCauldron.startTime) {
-            const elapsed = Date.now() - this.alchemyCauldron.startTime;
+            const now = Date.now();
+            const elapsed = now - this.alchemyCauldron.startTime;
             this.alchemyCauldron.progress = Math.min(100, (elapsed / this.alchemyCauldron.totalTime) * 100);
             
             // Автоматически собираем когда готово
             if (this.alchemyCauldron.progress >= 100) {
+                // Не собираем автоматически, просто обновляем отображение
                 this.renderBuildings();
                 this.saveToLocalStorage();
             }
@@ -1453,3 +1475,4 @@ window.onload = function() {
         }
     });
 };
+
