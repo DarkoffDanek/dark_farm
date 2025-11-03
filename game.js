@@ -751,42 +751,50 @@ class DarkFarmGame {
             }
         }
     }
-    
-    // Обновите метод updateInventoryDisplay для добавления счетчиков продажи
+        
     updateInventoryDisplay() {
         const inventoryItems = document.getElementById("inventoryItems");
         if (!inventoryItems) return;
         inventoryItems.innerHTML = "";
     
+        let hasItems = false;
+    
         // Отображаем растения
         Object.entries(this.harvestInventory).forEach(([item, count]) => {
             if (count <= 0) return;
     
-            // Проверяем: это растение или зелье
             const seedData = this.seedTypes[item];
             const isPotion = this.potionPrices && this.potionPrices[item];
     
-            if (!seedData && !isPotion) return;
-    
-            const emoji = seedData?.emoji || '🧪';
-            const name = seedData?.name || item;
-            const sellPrice = this.potionPrices?.[item] || seedData?.baseSellPrice || 0;
-    
-            const div = document.createElement("div");
-            div.className = "inventory-item";
-            div.innerHTML = `
-                <span class="emoji">${emoji}</span>
-                <span class="name">${name}</span>
-                <span class="count">x${count}</span>
-                <button class="sell-btn" onclick="game.sellHarvest('${item}')">
-                    Продать (${sellPrice}💀)
-                </button>
-            `;
-            inventoryItems.appendChild(div);
+            if (seedData || isPotion) {
+                hasItems = true;
+                
+                const emoji = seedData?.emoji || '🧪';
+                const name = seedData?.name || item;
+                const sellPrice = this.potionPrices?.[item] || seedData?.baseSellPrice || 0;
+                
+                const div = document.createElement("div");
+                div.className = "inventory-item harvest-item";
+                
+                // Для зелий добавляем специальный класс
+                if (isPotion) {
+                    div.classList.add('potion-item');
+                }
+                
+                div.innerHTML = `
+                    <div class="item-emoji">${emoji}</div>
+                    <div class="item-name">${name}</div>
+                    <div class="item-count">Количество: ${count}</div>
+                    <div class="item-sell-price">Цена продажи: ${sellPrice} душ</div>
+                    <button class="sell-btn" onclick="game.sellHarvest('${item}')">
+                        Продать за ${sellPrice}💀
+                    </button>
+                `;
+                inventoryItems.appendChild(div);
+            }
         });
     
-        // Если нет предметов, показываем сообщение
-        if (inventoryItems.children.length === 0) {
+        if (!hasItems) {
             inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
         }
     }
@@ -1643,10 +1651,12 @@ class DarkFarmGame {
     }
     // =============================
     // 🔮 АЛХИМИЧЕСКИЙ КОТЁЛ V2
-    // =============================
     collectAllPotions() {
         const stored = this.cauldron.storedPotions;
-        if (!stored || Object.keys(stored).length === 0) return;
+        if (!stored || Object.keys(stored).length === 0) {
+            this.showMessage('🧪', 'Нет зелий для забора!');
+            return;
+        }
     
         let totalCollected = 0;
         Object.entries(stored).forEach(([name, count]) => {
@@ -1657,6 +1667,8 @@ class DarkFarmGame {
     
         this.cauldron.storedPotions = {};
         this.cauldron.ready = false;
+        
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем отображение инвентаря
         this.updateInventoryDisplay();
         this.updateCauldronUI();
         this.saveCauldron();
@@ -1697,7 +1709,7 @@ class DarkFarmGame {
         this.collectBtn = document.getElementById('collectPotionBtn');
         this.progressFill = document.getElementById('cauldronProgress');
         this.info = document.getElementById('cauldronInfo');
-    
+        this.collectBtn.classList.add('cauldron-collect-btn');
         this.buyBtn.addEventListener('click', () => this.buyCauldron());
         this.startBtn.addEventListener('click', () => this.openIngredientSelection());
         this.collectBtn.addEventListener('click', () => this.openPotionStorage());
@@ -2011,13 +2023,12 @@ class DarkFarmGame {
         delete this.cauldron.storedPotions[potionName];
     
         // Обновляем отображение и сохраняем
-        this.updateInventoryDisplay();
+        this.updateInventoryDisplay(); // Убедитесь, что этот метод вызывается
         this.updateCauldronUI();
         this.saveCauldron();
         this.saveGameToCloud();
         this.showMessage('💎', `${potionName} добавлено в инвентарь!`);
     }
-
 
     updateCauldronUI() {
         if (!this.cauldronElement) return;
@@ -2097,6 +2108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
