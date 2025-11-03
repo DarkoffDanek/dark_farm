@@ -90,6 +90,14 @@ class DarkFarmGame {
         
         // Рецепты эликсиров
         this.elixirRecipes = {
+            'shadow_berry': {
+                name: 'Теневой Нектар',
+                emoji: '🍷',
+                baseSellPrice: 15,
+                description: 'Лёгкий напиток из теневых ягод',
+                brewingTime: 15000,
+                outputMultiplier: 1
+            },
             'ghost_pumpkin': {
                 name: 'Призрачный Эликсир',
                 emoji: '👻',
@@ -266,15 +274,21 @@ class DarkFarmGame {
         const recipeTypeSelect = document.getElementById('cauldronRecipeType');
         const quantityInput = document.getElementById('cauldronQuantity');
         
-        if (!recipeTypeSelect || !quantityInput) return;
+        if (!recipeTypeSelect || !quantityInput) {
+            console.log('Elements not found in updateCauldronMaxQuantity');
+            return;
+        }
         
         const recipeType = recipeTypeSelect.value;
+        console.log('Selected recipe type:', recipeType);
         
-        if (recipeType && this.harvestInventory[recipeType]) {
-            const maxQuantity = Math.min(10, this.harvestInventory[recipeType]);
+        if (recipeType && this.harvestInventory[recipeType] !== undefined) {
+            const available = this.harvestInventory[recipeType] || 0;
+            const maxQuantity = Math.min(10, available);
+            console.log('Available:', available, 'Max quantity:', maxQuantity);
+            
             quantityInput.max = maxQuantity;
             
-            // Убедимся, что текущее значение не превышает максимум
             let currentValue = parseInt(quantityInput.value) || 1;
             if (currentValue > maxQuantity) {
                 quantityInput.value = maxQuantity;
@@ -286,7 +300,6 @@ class DarkFarmGame {
             quantityInput.value = 1;
         }
     }
-    
     incrementCauldronQuantity() {
         const input = document.getElementById('cauldronQuantity');
         const recipeTypeSelect = document.getElementById('cauldronRecipeType');
@@ -408,12 +421,20 @@ class DarkFarmGame {
             const elapsed = now - this.alchemyCauldron.startTime;
             this.alchemyCauldron.progress = Math.min(100, (elapsed / this.alchemyCauldron.totalTime) * 100);
             
-            // Автоматически собираем когда готово
-            if (this.alchemyCauldron.progress >= 100) {
-                // Не собираем автоматически, просто обновляем отображение
-                this.renderBuildings();
-                this.saveToLocalStorage();
+            // Обновляем endTime на случай, если игра была перезагружена
+            if (this.alchemyCauldron.endTime) {
+                const timeLeft = this.alchemyCauldron.endTime - now;
+                if (timeLeft <= 0) {
+                    this.alchemyCauldron.progress = 100;
+                }
             }
+            
+            // Принудительно обновляем отображение каждую секунду
+            if (Math.floor(now / 1000) !== Math.floor(this.lastUpdate / 1000)) {
+                this.renderBuildings();
+            }
+            
+            this.saveToLocalStorage();
         }
     }
 
@@ -1055,7 +1076,11 @@ class DarkFarmGame {
             this.growCrops(deltaTime);
             this.updateCauldronProgress();
             this.updateDisplay();
-            this.renderBuildings();
+            
+            // Обновляем постройки только если нужно (для оптимизации)
+            if (this.alchemyCauldron.working) {
+                this.renderBuildings();
+            }
         }, 100);
     }
     
@@ -1475,4 +1500,5 @@ window.onload = function() {
         }
     });
 };
+
 
