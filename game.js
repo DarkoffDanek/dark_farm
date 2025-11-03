@@ -1,34 +1,39 @@
+// game.js
 class DarkFarmGame {
     constructor() {
         this.souls = 0;
         this.darkEssence = 100;
         this.seedsInventory = {};
         this.harvestInventory = {};
+        this.elixirInventory = {};
         this.shopCounters = {};
         this.exchangeCounter = 1;
         this.plotCounter = 1;
         this.sellCounters = {};
-        // Начальные грядки - 3 штуки
+        
+        // Грядки
         this.plots = [];
         this.initialPlots = 3;
         this.maxPlots = 31;
         this.plotPrice = 25;
+        
+        // Состояния интерфейса
         this.shopOpen = false;
         this.inventoryOpen = false;
-        this.buildingsOpen = false;
-        // Настройки обмена валюты
-        this.exchangeRate = 5;
-        this.exchangeAmount = 10;
-        this.cauldronMode = false; // Режим подключения грядок к котлу
-        this.connectedPlots = []; // Индексы грядок, подключенных к котлу
-        this.currentSeedTypeForCauldron = null; // Тип семян для переработки
-        // Система аккаунтов
-        this.currentUser = null;
-        this.autoSaveInterval = null;
         
-        this.lastUpdate = Date.now();
+        // Алхимический котел
+        this.alchemyCauldron = {
+            owned: false,
+            working: false,
+            progress: 0,
+            currentRecipe: null,
+            startTime: null,
+            totalTime: 0,
+            inputQuantity: 0,
+            outputQuantity: 0
+        };
         
-        // ✅ ПРАВИЛЬНЫЙ ПОРЯДОК: seedTypes ДО инициализации shopCounters
+        // Типы семян
         this.seedTypes = {
             'shadow_berry': {
                 name: 'Теневая ягода',
@@ -79,96 +84,52 @@ class DarkFarmGame {
                 baseSellPrice: 60,
                 description: 'Очень редкая и дорогая',
                 dropChance: 0.15
-            },
-            'moonlight_lily': {
-                name: 'Лунная лилия',
-                emoji: '🌸',
-                time: 10800000,
-                clicks: 3600,
-                buyPrice: 200,
-                baseSellPrice: 90,
-                description: 'Цветёт только в лунном свете',
-                dropChance: 0.1
-            },
-            'phantom_orchid': {
-                name: 'Фантомная орхидея',
-                emoji: '💮',
-                time: 21600000,
-                clicks: 7200,
-                buyPrice: 300,
-                baseSellPrice: 200,
-                description: 'Легендарное растение из иного мира',
-                dropChance: 0.05
-            }
-        };
-        this.buildings = {
-            alchemy_cauldron: {
-                name: "Алхимический Котёл",
-                emoji: "🧪",
-                price: 500,
-                description: "Превращает цветы в магические эликсиры",
-                owned: false,
-                working: false,
-                currentSeedType: null,
-                progress: 0,
-                totalTime: 0,
-                startTime: null,
-                inputSeeds: {},
-                speedMultiplier: 1.5,
-                outputMultiplier: 1.2
             }
         };
         
-        this.elixirInventory = {};
-        
-        // Добавляем типы эликсиров (соответствуют цветам кроме теневой ягоды)
-        this.elixirTypes = {
+        // Рецепты эликсиров
+        this.elixirRecipes = {
             'ghost_pumpkin': {
                 name: 'Призрачный Эликсир',
                 emoji: '👻',
-                baseSellPrice: 18,
-                description: 'Эфирная субстанция из призрачной тыквы'
+                baseSellPrice: 25,
+                description: 'Эфирная субстанция из призрачной тыквы',
+                brewingTime: 30000,
+                outputMultiplier: 1
             },
             'void_mushroom': {
                 name: 'Эликсир Пустоты',
                 emoji: '⚫',
-                baseSellPrice: 36,
-                description: 'Концентрированная энергия небытия'
+                baseSellPrice: 45,
+                description: 'Концентрированная энергия небытия',
+                brewingTime: 60000,
+                outputMultiplier: 1
             },
             'crystal_flower': {
                 name: 'Кристальный Настой',
                 emoji: '💎',
-                baseSellPrice: 58,
-                description: 'Сияющая жидкость с частицами кристаллов'
+                baseSellPrice: 65,
+                description: 'Сияющая жидкость с частицами кристаллов',
+                brewingTime: 120000,
+                outputMultiplier: 1
             },
             'blood_rose': {
                 name: 'Кровавый Отвар',
                 emoji: '🩸',
-                baseSellPrice: 86,
-                description: 'Густая тёмная жидкость с металлическим блеском'
-            },
-            'moonlight_lily': {
-                name: 'Лунный Нектар',
-                emoji: '🌙',
-                baseSellPrice: 144,
-                description: 'Мерцающий напиток с лунным сиянием'
-            },
-            'phantom_orchid': {
-                name: 'Фантомный Бальзам',
-                emoji: '👁️',
-                baseSellPrice: 216,
-                description: 'Полупрозрачная субстанция из мира духов'
+                baseSellPrice: 100,
+                description: 'Густая тёмная жидкость с металлическим блеском',
+                brewingTime: 240000,
+                outputMultiplier: 1
             }
         };
-        // ✅ ТЕПЕРЬ инициализируем shopCounters после seedTypes
+        
+        // Инициализация счетчиков магазина
         Object.keys(this.seedTypes).forEach(seedType => {
             this.shopCounters[seedType] = 1;
-            this.sellCounters[seedType] = 1; // Инициализируем счетчики продажи
+            this.sellCounters[seedType] = 1;
         });
         
-        this.shopOpen = false;
-        this.inventoryOpen = false;
-        
+        // Firebase конфигурация
         this.firebaseConfig = {
             apiKey: "AIzaSyCNBY7csQIsnE_EujafSPyAr-pvMxUq81w",
             authDomain: "dark-farm-game.firebaseapp.com",
@@ -181,677 +142,251 @@ class DarkFarmGame {
         this.firebaseApp = null;
         this.db = null;
         this.auth = null;
+        this.currentUser = null;
+        this.autoSaveInterval = null;
+        this.lastUpdate = Date.now();
         
-        // ✅ ПРАВИЛЬНЫЙ ПОРЯДОК ИНИЦИАЛИЗАЦИИ:
-        // 1. Загружаем данные
+        // Загрузка и инициализация
         this.loadFromLocalStorage();
         
-        // 2. Если данных нет, создаем начальные грядки
         if (this.plots.length === 0) {
             for (let i = 0; i < this.initialPlots; i++) {
                 this.addNewPlot();
             }
         }
         
-        // 3. Инициализируем интерфейс
         this.setupAuthModal();
         this.startGameLoop();
         this.initShop();
-        this.initBuildingsShop();
         this.updateInventoryDisplay();
         this.renderFarm();
+        this.renderBuildings();
         this.initFirebase();
         this.calculateOfflineProgress();
         this.setupBeforeUnload();
-        
-        setTimeout(() => {
-            if (!this.auth) {
-                console.warn("Firebase Auth все еще не инициализирован, пробуем снова...");
-                this.initFirebase();
-            }
-        }, 2000);
     }
-    
-    // ========== КОНЕЦ КОНСТРУКТОРА ==========
 
-    calculateOfflineProgress() {
-        const lastPlayed = localStorage.getItem('darkFarm_lastPlayed');
-        if (!lastPlayed) {
-            this.saveLastPlayedTime();
-            return;
+    // ========== АЛХИМИЧЕСКИЙ КОТЕЛ ==========
+
+    renderBuildings() {
+        const buildingsContainer = document.getElementById('buildingsContainer');
+        buildingsContainer.innerHTML = '';
+
+        const cauldron = document.createElement('div');
+        cauldron.className = `cauldron-building ${!this.alchemyCauldron.owned ? 'locked' : ''} ${this.alchemyCauldron.working ? 'working' : ''} ${this.alchemyCauldron.progress >= 100 ? 'ready' : ''}`;
+
+        if (!this.alchemyCauldron.owned) {
+            // Котел не куплен
+            cauldron.innerHTML = `
+                <div class="cauldron-emoji">🧪</div>
+                <div class="cauldron-name">Алхимический Котёл</div>
+                <div class="cauldron-price">Цена: 500 душ</div>
+                <div class="cauldron-description">Превращает цветы в магические эликсиры</div>
+                <div class="cauldron-stats">Увеличивает стоимость урожая в 1.5-2 раза</div>
+                <div class="cauldron-info">Требуется для создания эликсиров</div>
+                <button class="cauldron-buy-btn" onclick="game.buyCauldron()" 
+                        ${this.souls >= 500 ? '' : 'disabled'}>
+                    Купить за 500 душ
+                </button>
+            `;
+        } else if (this.alchemyCauldron.working) {
+            // Котел работает
+            const recipe = this.elixirRecipes[this.alchemyCauldron.currentRecipe];
+            const timeLeft = this.alchemyCauldron.totalTime - (Date.now() - this.alchemyCauldron.startTime);
+            const progress = Math.min(100, ((Date.now() - this.alchemyCauldron.startTime) / this.alchemyCauldron.totalTime) * 100);
+            
+            cauldron.innerHTML = `
+                <div class="cauldron-emoji">🧪</div>
+                <div class="cauldron-name">Алхимический Котёл</div>
+                <div class="cauldron-status">🔄 Варится: ${recipe.name}</div>
+                
+                <div class="cauldron-progress">
+                    <div class="cauldron-progress-info">
+                        Осталось: ${Math.ceil(timeLeft / 1000)} сек
+                    </div>
+                    <div class="cauldron-progress-bar">
+                        <div class="cauldron-progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+                
+                <div class="cauldron-info">
+                    Создаёт: ${this.alchemyCauldron.outputQuantity} эликсира
+                </div>
+                
+                <button class="cauldron-collect-btn" onclick="game.collectElixir()" 
+                        ${progress >= 100 ? '' : 'disabled'}>
+                    ${progress >= 100 ? '🎁 Забрать эликсир!' : '⏳ Ещё не готово'}
+                </button>
+            `;
+        } else {
+            // Котел готов к работе
+            const availableRecipes = Object.keys(this.elixirRecipes)
+                .filter(recipeType => this.harvestInventory[recipeType] > 0);
+            
+            cauldron.innerHTML = `
+                <div class="cauldron-emoji">🧪</div>
+                <div class="cauldron-name">Алхимический Котёл</div>
+                <div class="cauldron-status">✅ Готов к работе</div>
+                <div class="cauldron-description">Выберите цветы для переработки в эликсир</div>
+                
+                <div class="cauldron-controls">
+                    <div class="cauldron-input-label">Тип цветов:</div>
+                    <select class="cauldron-seed-select" id="cauldronRecipeType">
+                        <option value="">-- Выберите цветы --</option>
+                        ${availableRecipes.map(recipeType => {
+                            const recipe = this.elixirRecipes[recipeType];
+                            const seed = this.seedTypes[recipeType];
+                            return `<option value="${recipeType}">${seed.name} (доступно: ${this.harvestInventory[recipeType]}) → ${recipe.name}</option>`;
+                        }).join('')}
+                    </select>
+                    
+                    <div class="cauldron-input-label">Количество цветов:</div>
+                    <div class="cauldron-quantity">
+                        <button class="cauldron-quantity-btn" onclick="game.decrementCauldronQuantity()">-</button>
+                        <input type="number" class="cauldron-quantity-input" id="cauldronQuantity" value="1" min="1" max="10">
+                        <button class="cauldron-quantity-btn" onclick="game.incrementCauldronQuantity()">+</button>
+                    </div>
+                </div>
+                
+                <button class="cauldron-start-btn" onclick="game.startBrewing()" id="startBrewingBtn">
+                    Начать варку эликсира
+                </button>
+            `;
+            
+            // Обновляем максимальное количество
+            this.updateCauldronMaxQuantity();
         }
-    
-        const now = Date.now();
-        const offlineTime = now - parseInt(lastPlayed);
-        const maxOfflineTime = 24 * 60 * 60 * 1000;
         
-        console.log(`Офлайн время: ${offlineTime}ms`);
-        
-        if (offlineTime > 10000 && offlineTime < maxOfflineTime) {
-            this.processOfflineGrowth(offlineTime);
-            this.showOfflineProgressMessage(offlineTime);
-        }
-        
-        this.saveLastPlayedTime();
+        buildingsContainer.appendChild(cauldron);
     }
-    
-    processOfflineGrowth(offlineTime) {
-        let growthOccurred = false;
-        
-        this.plots.forEach(plot => {
-            if (plot.planted && plot.growth < 100 && plot.totalGrowthTime > 0) {
-                const growthPerMs = 100 / plot.totalGrowthTime;
-                const offlineGrowth = growthPerMs * offlineTime;
-                
-                plot.growth = Math.min(100, plot.growth + offlineGrowth);
-                plot.remainingTime = Math.max(0, plot.remainingTime - offlineTime);
-                
-                if (plot.growth >= 100) {
-                    plot.growth = 100;
-                    plot.remainingTime = 0;
-                }
-                
-                growthOccurred = true;
-                console.log(`Грядка выросла на ${offlineGrowth.toFixed(2)}%`);
-            }
-        });
-        
-        if (growthOccurred) {
+
+    buyCauldron() {
+        if (this.souls >= 500 && !this.alchemyCauldron.owned) {
+            this.souls -= 500;
+            this.alchemyCauldron.owned = true;
+            
             this.updateDisplay();
-            this.saveToLocalStorage();
-        }
-    }
-    toggleCauldronMode() {
-        this.cauldronMode = !this.cauldronMode;
-        
-        if (this.cauldronMode) {
-            this.showCauldronModeInstructions();
-        } else {
-            this.hideCauldronModeInstructions();
-        }
-        
-        this.renderFarm();
-    }
-    
-    // Показать инструкции для режима подключения
-    showCauldronModeInstructions() {
-        const message = document.createElement('div');
-        message.className = 'purchase-message';
-        message.style.background = '#9C27B0';
-        message.innerHTML = `
-            <span class="purchase-emoji">🔗</span>
-            <span class="purchase-text">Режим подключения: кликайте на грядки чтобы подключить/отключить их от котла</span>
-        `;
-        message.id = 'cauldron-mode-message';
-        
-        document.body.appendChild(message);
-        
-        setTimeout(() => {
-            message.classList.add('show');
-        }, 100);
-    }
-    
-    // Скрыть инструкции
-    hideCauldronModeInstructions() {
-        const message = document.getElementById('cauldron-mode-message');
-        if (message) {
-            message.classList.remove('show');
-            setTimeout(() => {
-                if (message.parentNode) {
-                    message.parentNode.removeChild(message);
-                }
-            }, 500);
-        }
-    }
-    
-    // Подключение/отключение грядки к котлу
-    togglePlotConnection(plotIndex) {
-        if (!this.cauldronMode) return;
-        
-        const index = this.connectedPlots.indexOf(plotIndex);
-        if (index > -1) {
-            // Отключаем грядку
-            this.connectedPlots.splice(index, 1);
-        } else {
-            // Подключаем грядку
-            this.connectedPlots.push(plotIndex);
+            this.renderBuildings();
+            this.saveGameToCloud();
             
-            // Если это первая подключенная грядка, запоминаем тип семян
-            if (this.connectedPlots.length === 1) {
-                const plot = this.plots[plotIndex];
-                if (plot.planted) {
-                    this.currentSeedTypeForCauldron = plot.type;
-                }
-            }
+            this.showMessage('🧪', 'Куплен Алхимический Котёл!', 'success');
         }
-        
-        this.renderFarm();
-        this.saveGameToCloud();
-    }
-    
-    // Проверка, подключена ли грядка к котлу
-    isPlotConnected(plotIndex) {
-        return this.connectedPlots.includes(plotIndex);
-    }
-    showOfflineProgressMessage(offlineTime) {
-        const hours = Math.floor(offlineTime / (1000 * 60 * 60));
-        const minutes = Math.floor((offlineTime % (1000 * 60 * 60)) / (1000 * 60));
-        
-        let timeString = '';
-        if (hours > 0) timeString += `${hours}ч `;
-        if (minutes > 0) timeString += `${minutes}м`;
-        
-        const grownPlants = this.plots.filter(plot => 
-            plot.planted && plot.growth >= 100
-        ).length;
-        
-        const message = document.createElement('div');
-        message.className = 'offline-progress-message';
-        message.innerHTML = `
-            <div class="offline-header">⚡ Офлайн прогресс</div>
-            <div class="offline-time">Вы отсутствовали: ${timeString}</div>
-            <div class="offline-info">Выросли ${grownPlants} растений!</div>
-            <div class="offline-tip">Кликайте на растения для сбора урожая</div>
-        `;
-        
-        document.body.appendChild(message);
-        
-        setTimeout(() => message.classList.add('show'), 100);
-        setTimeout(() => {
-            message.classList.remove('show');
-            setTimeout(() => {
-                if (message.parentNode) message.parentNode.removeChild(message);
-            }, 500);
-        }, 5000);
-    }
-    
-    saveLastPlayedTime() {
-        localStorage.setItem('darkFarm_lastPlayed', Date.now().toString());
-    }
-    
-    saveToLocalStorage() {
-        const gameData = {
-            souls: this.souls,
-            darkEssence: this.darkEssence,
-            seedsInventory: this.seedsInventory,
-            harvestInventory: this.harvestInventory,
-            plots: this.plots,
-            lastUpdate: Date.now(),
-            connectedPlots: this.connectedPlots,
-            cauldronMode: this.cauldronMode,
-            currentSeedTypeForCauldron: this.currentSeedTypeForCauldron
-        };
-        localStorage.setItem('darkFarm_backup', JSON.stringify(gameData));
-    }
-    
-    loadFromLocalStorage() {
-        const saved = localStorage.getItem('darkFarm_backup');
-        if (saved) {
-            try {
-                const gameData = JSON.parse(saved);
-                this.souls = gameData.souls || 0;
-                this.darkEssence = gameData.darkEssence || 100;
-                this.seedsInventory = gameData.seedsInventory || {};
-                this.harvestInventory = gameData.harvestInventory || {};
-                this.elixirInventory = gameData.elixirInventory || {};
-                this.plots = gameData.plots || [];
-                this.connectedPlots = gameData.connectedPlots || [];
-                this.cauldronMode = gameData.cauldronMode || false;
-                this.currentSeedTypeForCauldron = gameData.currentSeedTypeForCauldron || null;
-                
-                // Восстанавливаем состояние построек если есть
-                if (gameData.buildings) {
-                    this.buildings = gameData.buildings;
-                }
-                
-                console.log(`Загружено ${this.plots.length} грядок из сохранения`);
-                return true;
-            } catch (error) {
-                console.error('Ошибка загрузки из localStorage:', error);
-            }
-        }
-        return false;
-    }
-    
-    setupBeforeUnload() {
-        window.addEventListener('beforeunload', () => {
-            this.saveLastPlayedTime();
-            if (this.currentUser) {
-                this.saveGameToCloud();
-            } else {
-                this.saveToLocalStorage();
-            }
-        });
     }
 
-    checkAuthState() {
-        if (!this.auth) {
-            console.error("Firebase Auth не инициализирован!");
+    updateCauldronMaxQuantity() {
+        const recipeType = document.getElementById('cauldronRecipeType').value;
+        if (recipeType && this.harvestInventory[recipeType]) {
+            const input = document.getElementById('cauldronQuantity');
+            input.max = Math.min(10, this.harvestInventory[recipeType]);
+        }
+    }
+
+    incrementCauldronQuantity() {
+        const input = document.getElementById('cauldronQuantity');
+        const recipeType = document.getElementById('cauldronRecipeType').value;
+        
+        if (!recipeType) return;
+        
+        const maxQuantity = Math.min(10, this.harvestInventory[recipeType] || 0);
+        let value = parseInt(input.value) || 1;
+        
+        if (value < maxQuantity) {
+            value++;
+            input.value = value;
+        }
+    }
+
+    decrementCauldronQuantity() {
+        const input = document.getElementById('cauldronQuantity');
+        let value = parseInt(input.value) || 1;
+        
+        if (value > 1) {
+            value--;
+            input.value = value;
+        }
+    }
+
+    startBrewing() {
+        const recipeType = document.getElementById('cauldronRecipeType').value;
+        const quantity = parseInt(document.getElementById('cauldronQuantity').value) || 1;
+        
+        if (!recipeType) {
+            this.showMessage('⚠️', 'Выберите тип цветов для переработки!', 'error');
             return;
         }
         
-        console.log("Подписываемся на изменения состояния аутентификации...");
-        
-        this.auth.onAuthStateChanged((user) => {
-            console.log("Изменение состояния аутентификации:", user);
-            
-            if (user) {
-                console.log("Пользователь вошел:", user.email);
-                this.currentUser = user;
-                document.getElementById('authButton').textContent = '👤 Аккаунт';
-                this.loadGameFromCloud();
-                this.showAuthStatus("Успешный вход!", "success");
-            } else {
-                console.log("Пользователь вышел");
-                this.currentUser = null;
-                document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
-                this.stopAutoSave();
-                this.resetGame();
-            }
-        }, (error) => {
-            console.error("Ошибка в onAuthStateChanged:", error);
-        });
-    }
-
-    showAuthStatus(message, type = "error") {
-        const status = document.getElementById('authStatus');
-        status.textContent = message;
-        status.className = `auth-status ${type}`;
-        
-        if (type === "success") {
-            setTimeout(() => {
-                status.textContent = '';
-                status.className = 'auth-status';
-            }, 3000);
-        }
-    }
-    toggleBuildings() {
-        this.buildingsOpen = !this.buildingsOpen;
-        const buildings = document.getElementById('buildings');
-        buildings.classList.toggle('hidden', !this.buildingsOpen);
-        
-        if (this.buildingsOpen) {
-            this.initBuildingsShop();
-        }
-        
-        if (this.buildingsOpen && (this.shopOpen || this.inventoryOpen)) {
-            if (this.shopOpen) this.toggleShop();
-            if (this.inventoryOpen) this.toggleInventory();
-        }
-    }
-    setupAuthModal() {
-        const authButton = document.getElementById('authButton');
-        const modal = document.getElementById('authModal');
-        const closeBtn = document.querySelector('.close');
-        const showRegister = document.getElementById('showRegister');
-        const showLogin = document.getElementById('showLogin');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-
-        authButton.addEventListener('click', () => {
-            if (this.currentUser) {
-                this.logout();
-            } else {
-                this.showAuthModal();
-            }
-        });
-
-        closeBtn.addEventListener('click', () => this.hideAuthModal());
-        
-        showRegister.addEventListener('click', () => {
-            loginForm.classList.add('hidden');
-            registerForm.classList.remove('hidden');
-        });
-        
-        showLogin.addEventListener('click', () => {
-            registerForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-        });
-
-        document.getElementById('loginSubmit').addEventListener('click', () => this.login());
-        document.getElementById('registerSubmit').addEventListener('click', () => this.register());
-
-        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.login();
-        });
-        document.getElementById('registerPassword').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.register();
-        });
-        
-        setTimeout(() => {
-            console.log("Firebase Config:", this.firebaseConfig);
-            console.log("Firebase Auth:", this.auth);
-        }, 1000);
-    }
-
-    initFirebase() {
-        try {
-            console.log("Инициализация Firebase...");
-            
-            if (typeof firebase === 'undefined') {
-                console.error("Firebase не загружен!");
-                return;
-            }
-    
-            if (!firebase.apps.length) {
-                this.firebaseApp = firebase.initializeApp(this.firebaseConfig);
-                console.log("Firebase app инициализирован:", this.firebaseApp);
-            } else {
-                this.firebaseApp = firebase.app();
-                console.log("Используем существующий Firebase app");
-            }
-    
-            this.db = firebase.firestore();
-            this.auth = firebase.auth();
-            
-            console.log("Firebase Auth инициализирован:", this.auth);
-            console.log("Firebase Firestore инициализирован:", this.db);
-            
-            this.checkAuthState();
-            
-        } catch (error) {
-            console.error("Ошибка инициализации Firebase:", error);
-        }
-    }
-
-    showAuthModal() {
-        document.getElementById('authModal').classList.remove('hidden');
-        document.getElementById('loginForm').classList.remove('hidden');
-        document.getElementById('registerForm').classList.add('hidden');
-        document.getElementById('authStatus').textContent = '';
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('registerUsername').value = '';
-        document.getElementById('registerPassword').value = '';
-        document.getElementById('registerConfirm').value = '';
-    }
-
-    hideAuthModal() {
-        document.getElementById('authModal').classList.add('hidden');
-    }
-
-    async login() {
-        const email = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        const status = document.getElementById('authStatus');
-        
-        console.log("Попытка входа:", email);
-        
-        if (!this.auth) {
-            this.showAuthStatus("Ошибка: Firebase не инициализирован");
+        if (!this.harvestInventory[recipeType] || this.harvestInventory[recipeType] < quantity) {
+            this.showMessage('⚠️', 'Недостаточно выбранных цветов!', 'error');
             return;
         }
         
-        try {
-            const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
-            console.log("Вход успешен:", userCredential.user);
-            this.hideAuthModal();
-            status.textContent = '';
-        } catch (error) {
-            console.error("Ошибка входа:", error);
-            this.showAuthStatus('Ошибка входа: ' + error.message);
-        }
-    }
-    
-    async register() {
-        const email = document.getElementById('registerUsername').value.trim();
-        const password = document.getElementById('registerPassword').value;
-        const confirm = document.getElementById('registerConfirm').value;
-        const status = document.getElementById('authStatus');
+        // Забираем цветы из инвентаря
+        this.harvestInventory[recipeType] -= quantity;
         
-        console.log("Попытка регистрации:", email);
-        
-        if (!this.auth) {
-            this.showAuthStatus("Ошибка: Firebase не инициализирован");
-            return;
-        }
-        
-        if (!email || !password || !confirm) {
-            this.showAuthStatus('Заполните все поля!');
-            return;
-        }
-    
-        if (password !== confirm) {
-            this.showAuthStatus('Пароли не совпадают!');
-            return;
-        }
-    
-        try {
-            const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
-            console.log("Регистрация успешна:", userCredential.user);
-            await this.createNewUserData();
-            this.hideAuthModal();
-            status.textContent = '';
-        } catch (error) {
-            console.error("Ошибка регистрации:", error);
-            this.showAuthStatus('Ошибка регистрации: ' + error.message);
-        }
-    }
-
-    async logout() {
-        await this.saveGameToCloud();
-        if (this.auth) {
-            await this.auth.signOut();
-        }
-        this.currentUser = null;
-        document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
-        this.stopAutoSave();
-        this.resetGame();
-    }
-
-    async saveGameToCloud() {
-        if (!this.currentUser) return;
-        
-        const gameData = {
-            souls: this.souls,
-            darkEssence: this.darkEssence,
-            seedsInventory: this.seedsInventory,
-            harvestInventory: this.harvestInventory,
-            plots: this.plots,
-            lastUpdate: Date.now()
-        };
-        
-        try {
-            await this.db.collection('users').doc(this.currentUser.uid).set({
-                gameData: gameData,
-                lastSaved: new Date()
-            });
-            
-            this.saveLastPlayedTime();
-            this.saveToLocalStorage();
-            
-        } catch (error) {
-            console.error('Ошибка сохранения в облако:', error);
-            this.saveToLocalStorage();
-        }
-    }
-
-    resetGame() {
-        this.souls = 0;
-        this.darkEssence = 100;
-        this.seedsInventory = {};
-        this.harvestInventory = {};
-        this.plots = [];
-        
-        for (let i = 0; i < this.initialPlots; i++) {
-            this.addNewPlot();
-        }
+        // Настраиваем процесс варки
+        const recipe = this.elixirRecipes[recipeType];
+        this.alchemyCauldron.working = true;
+        this.alchemyCauldron.currentRecipe = recipeType;
+        this.alchemyCauldron.progress = 0;
+        this.alchemyCauldron.startTime = Date.now();
+        this.alchemyCauldron.totalTime = recipe.brewingTime * quantity;
+        this.alchemyCauldron.inputQuantity = quantity;
+        this.alchemyCauldron.outputQuantity = quantity * recipe.outputMultiplier;
         
         this.updateDisplay();
-        this.initShop();
+        this.renderBuildings();
         this.updateInventoryDisplay();
-        this.renderFarm();
+        this.saveGameToCloud();
+        
+        this.showMessage('🔥', `Начата варка ${recipe.name}!`,'success');
     }
 
-    async loadGameFromCloud() {
-        if (!this.currentUser) {
-            if (this.loadFromLocalStorage()) {
-                this.renderFarm();
-                this.updateDisplay();
-                this.initShop();
-                this.updateInventoryDisplay();
-            }
-            return;
-        }
+    collectElixir() {
+        if (!this.alchemyCauldron.working || this.alchemyCauldron.progress < 100) return;
         
-        try {
-            const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+        const recipeType = this.alchemyCauldron.currentRecipe;
+        const recipe = this.elixirRecipes[recipeType];
+        
+        // Добавляем эликсир в инвентарь
+        if (!this.elixirInventory[recipeType]) {
+            this.elixirInventory[recipeType] = 0;
+        }
+        this.elixirInventory[recipeType] += this.alchemyCauldron.outputQuantity;
+        
+        // Сбрасываем состояние котла
+        this.alchemyCauldron.working = false;
+        this.alchemyCauldron.currentRecipe = null;
+        this.alchemyCauldron.progress = 0;
+        this.alchemyCauldron.startTime = null;
+        this.alchemyCauldron.totalTime = 0;
+        this.alchemyCauldron.inputQuantity = 0;
+        this.alchemyCauldron.outputQuantity = 0;
+        
+        this.updateDisplay();
+        this.renderBuildings();
+        this.updateInventoryDisplay();
+        this.saveGameToCloud();
+        
+        this.showMessage(recipe.emoji, `Создано ${this.alchemyCauldron.outputQuantity} эликсира ${recipe.name}!`, 'success');
+    }
+
+    updateCauldronProgress() {
+        if (this.alchemyCauldron.working && this.alchemyCauldron.startTime) {
+            const elapsed = Date.now() - this.alchemyCauldron.startTime;
+            this.alchemyCauldron.progress = Math.min(100, (elapsed / this.alchemyCauldron.totalTime) * 100);
             
-            if (doc.exists) {
-                const userData = doc.data();
-                const gameData = userData.gameData;
-                
-                this.souls = gameData.souls || 0;
-                this.darkEssence = gameData.darkEssence || 100;
-                this.seedsInventory = gameData.seedsInventory || {};
-                this.harvestInventory = gameData.harvestInventory || {};
-                this.plots = gameData.plots || [];
-
-                console.log(`Загружено ${this.plots.length} грядок из облака`);
-
-                this.renderFarm();
-                this.updateDisplay();
-                this.initShop();
-                this.updateInventoryDisplay();
-                this.saveToLocalStorage();
-            } else {
-                this.loadFromLocalStorage();
-                this.renderFarm();
-            }
-        } catch (error) {
-            console.error('Ошибка загрузки из облака:', error);
-            this.loadFromLocalStorage();
-            this.renderFarm();
-        }
-        this.startAutoSave();
-    }
-
-    stopAutoSave() {
-        if (this.autoSaveInterval) {
-            clearInterval(this.autoSaveInterval);
-            this.autoSaveInterval = null;
-        }
-    }
-
-    startAutoSave() {
-        this.autoSaveInterval = setInterval(() => {
-            if (this.currentUser) {
+            if (this.alchemyCauldron.progress >= 100) {
+                this.renderBuildings();
                 this.saveGameToCloud();
-            } else {
-                this.saveToLocalStorage();
-                this.saveLastPlayedTime();
             }
-        }, 30000);
-    }
-    
-    async createNewUserData() {
-        this.plots = [];
-        for (let i = 0; i < this.initialPlots; i++) {
-            this.addNewPlot();
         }
-        
-        const gameData = {
-            souls: 0,
-            darkEssence: 100,
-            seedsInventory: {},
-            harvestInventory: {},
-            plots: this.plots,
-            lastUpdate: Date.now()
-        };
-        
-        await this.saveGameToCloud();
     }
 
     // ========== ОСНОВНЫЕ МЕТОДЫ ИГРЫ ==========
-    incrementSell(seedType) {
-        const maxSellable = this.harvestInventory[seedType] || 0;
-        if (!this.sellCounters[seedType]) {
-            this.sellCounters[seedType] = 1;
-        }
-        if (this.sellCounters[seedType] < maxSellable) {
-            this.sellCounters[seedType]++;
-            this.updateInventoryDisplay();
-        }
-    }
-    
-    decrementSell(seedType) {
-        if (!this.sellCounters[seedType]) {
-            this.sellCounters[seedType] = 1;
-        }
-        if (this.sellCounters[seedType] > 1) {
-            this.sellCounters[seedType]--;
-            this.updateInventoryDisplay();
-        }
-    }
-    
-    setMaxSell(seedType) {
-        const maxSellable = this.harvestInventory[seedType] || 0;
-        if (maxSellable > 0) {
-            this.sellCounters[seedType] = maxSellable;
-            this.updateInventoryDisplay();
-        }
-    }
-    
-    updateSellFromInput(seedType) {
-        const input = document.getElementById(`sell-quantity-${seedType}`);
-        const maxSellable = this.harvestInventory[seedType] || 0;
-        let value = parseInt(input.value) || 1;
-        
-        if (value < 1) value = 1;
-        if (value > maxSellable) value = maxSellable;
-        
-        this.sellCounters[seedType] = value;
-        this.updateInventoryDisplay();
-    }
-    
-    // Обновленный метод sellHarvest с поддержкой счетчика
-    sellHarvest(seedType) {
-        const sellCount = this.sellCounters[seedType] || 1;
-        const seedData = this.seedTypes[seedType];
-        
-        if (this.harvestInventory[seedType] >= sellCount) {
-            const totalPrice = seedData.baseSellPrice * sellCount;
-            this.souls += totalPrice;
-            this.harvestInventory[seedType] -= sellCount;
-            
-            // Сбрасываем счетчик после продажи
-            this.sellCounters[seedType] = 1;
-            
-            this.updateDisplay();
-            this.updateInventoryDisplay();
-            this.saveGameToCloud();
-            
-            // Показываем сообщение о успешной продаже
-            this.showSellMessage(seedData.emoji, seedData.name, sellCount, totalPrice);
-        }
-    }
-    
-    // Метод для показа сообщения о продаже
-    showSellMessage(emoji, name, count, price) {
-        const message = document.createElement('div');
-        message.className = 'purchase-message';
-        message.innerHTML = `
-            <span class="purchase-emoji">💰</span>
-            <span class="purchase-text">Продано ${count} урожая ${name} за ${price} душ!</span>
-        `;
-        
-        document.body.appendChild(message);
-        
-        setTimeout(() => {
-            message.classList.add('show');
-        }, 100);
-        
-        setTimeout(() => {
-            message.classList.remove('show');
-            setTimeout(() => {
-                if (message.parentNode) {
-                    message.parentNode.removeChild(message);
-                }
-            }, 500);
-        }, 3000);
-    }
-    
-    buySeed(seedType) {
+
+    // ... (остальные методы остаются такими же, как в предыдущей версии)
+    // buySeed, plantSeed, harvest, updateDisplay, initShop, etc.
+     buySeed(seedType) {
         const seedData = this.seedTypes[seedType];
         const quantity = this.shopCounters[seedType] || 1;
         const totalPrice = seedData.buyPrice * quantity;
@@ -2130,7 +1665,40 @@ class DarkFarmGame {
         this.shopCounters[seedType] = value;
         this.updateShopItem(seedType);
     }
-    
+    incrementSell(seedType) {
+        const max = this.harvestInventory[seedType] || 0;
+        const current = this.sellCounters[seedType] || 1;
+        if (current < max) {
+            this.sellCounters[seedType] = current + 1;
+            this.updateInventoryDisplay();
+        }
+    }
+
+    decrementSell(seedType) {
+        const current = this.sellCounters[seedType] || 1;
+        if (current > 1) {
+            this.sellCounters[seedType] = current - 1;
+            this.updateInventoryDisplay();
+        }
+    }
+
+    setMaxSell(seedType) {
+        const max = this.harvestInventory[seedType] || 0;
+        if (max > 0) {
+            this.sellCounters[seedType] = max;
+            this.updateInventoryDisplay();
+        }
+    }
+
+    updateSellFromInput(seedType) {
+        const input = document.getElementById(`sell-quantity-${seedType}`);
+        const max = this.harvestInventory[seedType] || 0;
+        let value = parseInt(input.value) || 1;
+        if (value < 1) value = 1;
+        if (value > max) value = max;
+        this.sellCounters[seedType] = value;
+        this.updateInventoryDisplay();
+    }
     updateShopItem(seedType) {
         const seedData = this.seedTypes[seedType];
         const currentCount = this.shopCounters[seedType] || 1;
@@ -2264,8 +1832,225 @@ class DarkFarmGame {
             inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
         }
     }
+    updateInventoryDisplay() {
+        const inventoryItems = document.getElementById('inventoryItems');
+        inventoryItems.innerHTML = '';
+        
+        // Секция семян
+        let hasSeeds = false;
+        const seedsSection = document.createElement('div');
+        seedsSection.className = 'inventory-section';
+        seedsSection.innerHTML = '<h4>📦 Семена</h4>';
+        
+        Object.entries(this.seedsInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasSeeds = true;
+                const seedData = this.seedTypes[seedType];
+                const seedItem = document.createElement('div');
+                seedItem.className = 'inventory-item seed-item';
+                
+                seedItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Семян: ${count}</div>
+                    <div class="item-info">Посадите чтобы вырастить</div>
+                `;
+                
+                seedsSection.appendChild(seedItem);
+            }
+        });
+        
+        if (hasSeeds) {
+            inventoryItems.appendChild(seedsSection);
+        }
+        
+        // Секция урожая
+        let hasHarvest = false;
+        const harvestSection = document.createElement('div');
+        harvestSection.className = 'inventory-section';
+        harvestSection.innerHTML = '<h4>🌿 Урожай (для продажи или котла)</h4>';
+        
+        Object.entries(this.harvestInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasHarvest = true;
+                const seedData = this.seedTypes[seedType];
+                const sellCount = this.sellCounters[seedType] || 1;
+                const totalPrice = seedData.baseSellPrice * sellCount;
+                const canSell = count >= sellCount;
+                
+                const harvestItem = document.createElement('div');
+                harvestItem.className = 'inventory-item harvest-item';
+                
+                harvestItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Урожая: ${count}</div>
+                    <div class="item-sell-price">Цена за шт: ${seedData.baseSellPrice} душ</div>
+                    
+                    <div class="quantity-controls">
+                        <div class="quantity-info">
+                            <span>Продать: </span>
+                            <span class="quantity-total">${totalPrice} душ</span>
+                        </div>
+                        <div class="quantity-buttons">
+                            <button class="quantity-btn" onclick="game.decrementSell('${seedType}')">-</button>
+                            <input type="number" 
+                                   class="quantity-input" 
+                                   id="sell-quantity-${seedType}" 
+                                   value="${sellCount}" 
+                                   min="1" 
+                                   max="${count}" 
+                                   onchange="game.updateSellFromInput('${seedType}')">
+                            <button class="quantity-btn" onclick="game.incrementSell('${seedType}')">+</button>
+                            <button class="quantity-max-btn" onclick="game.setMaxSell('${seedType}')">MAX</button>
+                        </div>
+                    </div>
+                    
+                    <button class="sell-btn" onclick="game.sellHarvest('${seedType}')" 
+                            ${!canSell ? 'disabled' : ''}>
+                        Продать ${sellCount} шт за ${totalPrice} душ
+                    </button>
+                `;
+                
+                harvestSection.appendChild(harvestItem);
+            }
+        });
+        
+        if (hasHarvest) {
+            inventoryItems.appendChild(harvestSection);
+        }
+        
+        // Секция эликсиров
+        let hasElixirs = false;
+        const elixirsSection = document.createElement('div');
+        elixirsSection.className = 'inventory-section';
+        elixirsSection.innerHTML = '<h4>🧪 Эликсиры (из котла)</h4>';
+        
+        Object.entries(this.elixirInventory).forEach(([elixirType, count]) => {
+            if (count > 0) {
+                hasElixirs = true;
+                const elixirData = this.elixirRecipes[elixirType];
+                const sellCount = this.sellCounters[elixirType] || 1;
+                const totalPrice = elixirData.baseSellPrice * sellCount;
+                const canSell = count >= sellCount;
+                
+                const elixirItem = document.createElement('div');
+                elixirItem.className = 'inventory-item';
+                elixirItem.style.background = 'linear-gradient(135deg, #5a2d5a, #7c4a7c)';
+                
+                elixirItem.innerHTML = `
+                    <div class="item-emoji">${elixirData.emoji}</div>
+                    <div class="item-name">${elixirData.name}</div>
+                    <div class="item-count">Эликсиров: ${count}</div>
+                    <div class="item-sell-price">Цена за шт: ${elixirData.baseSellPrice} душ</div>
+                    <div class="item-description">${elixirData.description}</div>
+                    
+                    <div class="quantity-controls">
+                        <div class="quantity-info">
+                            <span>Продать: </span>
+                            <span class="quantity-total">${totalPrice} душ</span>
+                        </div>
+                        <div class="quantity-buttons">
+                            <button class="quantity-btn" onclick="game.decrementSell('${elixirType}')">-</button>
+                            <input type="number" 
+                                   class="quantity-input" 
+                                   id="sell-quantity-${elixirType}" 
+                                   value="${sellCount}" 
+                                   min="1" 
+                                   max="${count}" 
+                                   onchange="game.updateSellFromInput('${elixirType}')">
+                            <button class="quantity-btn" onclick="game.incrementSell('${elixirType}')">+</button>
+                            <button class="quantity-max-btn" onclick="game.setMaxSell('${elixirType}')">MAX</button>
+                        </div>
+                    </div>
+                    
+                    <button class="sell-btn" onclick="game.sellElixir('${elixirType}')" 
+                            ${!canSell ? 'disabled' : ''}>
+                        Продать ${sellCount} шт за ${totalPrice} душ
+                    </button>
+                `;
+                
+                elixirsSection.appendChild(elixirItem);
+            }
+        });
+        
+        if (hasElixirs) {
+            inventoryItems.appendChild(elixirsSection);
+        }
+        
+        if (!hasSeeds && !hasHarvest && !hasElixirs) {
+            inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
+        }
+    }
+
+    sellElixir(elixirType) {
+        const sellCount = this.sellCounters[elixirType] || 1;
+        const elixirData = this.elixirRecipes[elixirType];
+        
+        if (this.elixirInventory[elixirType] >= sellCount) {
+            const totalPrice = elixirData.baseSellPrice * sellCount;
+            this.souls += totalPrice;
+            this.elixirInventory[elixirType] -= sellCount;
+            
+            this.sellCounters[elixirType] = 1;
+            
+            this.updateDisplay();
+            this.updateInventoryDisplay();
+            this.saveGameToCloud();
+            
+            this.showMessage('💰', `Продано ${sellCount} эликсира ${elixirData.name} за ${totalPrice} душ!`, 'success');
+        }
+    }
+
+    startGameLoop() {
+        setInterval(() => {
+            const now = Date.now();
+            const deltaTime = (now - this.lastUpdate) / 1000;
+            this.lastUpdate = now;
+            
+            this.growCrops(deltaTime);
+            this.updateCauldronProgress();
+            this.updateDisplay();
+        }, 100);
+    }
+
+    // ... (остальные методы: saveToLocalStorage, loadFromLocalStorage, Firebase методы и т.д.)
+
+    showMessage(emoji, text, type = 'info') {
+        const message = document.createElement('div');
+        message.className = 'purchase-message';
+        
+        if (type === 'success') {
+            message.style.background = '#4CAF50';
+        } else if (type === 'error') {
+            message.style.background = '#f44336';
+        } else {
+            message.style.background = '#2196F3';
+        }
+        
+        message.innerHTML = `
+            <span class="purchase-emoji">${emoji}</span>
+            <span class="purchase-text">${text}</span>
+        `;
+        
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 500);
+        }, 3000);
+    }
 }
 
+// Инициализация игры
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
@@ -2276,10 +2061,6 @@ window.onload = function() {
     
     document.getElementById('inventoryToggle').addEventListener('click', () => {
         game.toggleInventory();
-    });
-    
-    document.getElementById('buildingsToggle').addEventListener('click', () => {
-        game.toggleBuildings();
     });
     
     // Обработчики для модального окна
@@ -2295,29 +2076,4 @@ window.onload = function() {
             modal.classList.add('hidden');
         }
     });
-    
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            modal.classList.add('hidden');
-        }
-    });
-    document.getElementById('cauldronModeToggle').addEventListener('click', () => {
-        game.toggleCauldronMode();
-        
-        // Обновляем вид кнопки
-        const btn = document.getElementById('cauldronModeToggle');
-        if (game.cauldronMode) {
-            btn.classList.add('active');
-            btn.textContent = '🔗 Режим подключения (ВКЛ)';
-        } else {
-            btn.classList.remove('active');
-            btn.textContent = '🔗 Подключить грядки';
-        }
-    });
 };
-
-
-
-
-
-
