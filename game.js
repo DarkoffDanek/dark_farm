@@ -1831,28 +1831,57 @@ class DarkFarmGame {
 
     
         // Запуск варки
-    finishBrewing() {
-        this.cauldron.brewing = false;
-        this.cauldron.ready = true;
+// =====================
+//  Запуск варки (фикс)
+// =====================
+    startBrewing(selectedIngredients) {
+        if (this.cauldron.brewing) return;
     
-        // Рассчитываем, сколько зелий сварилось = сумма ингредиентов
-        const totalPotions = Object.values(this.cauldron.currentIngredients)
-            .reduce((a, b) => a + b, 0);
-    
-        // Генерируем результат (название)
-        const potionName = this.generatePotionResult(this.cauldron.currentIngredients);
-    
-        // Добавляем в хранилище котла
-        if (!this.cauldron.storedPotions[potionName]) {
-            this.cauldron.storedPotions[potionName] = 0;
+        // Проверка ингредиентов
+        for (const [type, qty] of Object.entries(selectedIngredients)) {
+            if ((this.harvestInventory[type] || 0) < qty) {
+                this.showMessage('🚫', 'Недостаточно ингредиентов!');
+                return;
+            }
         }
-        this.cauldron.storedPotions[potionName] += totalPotions;
     
-        this.cauldron.currentIngredients = {};
+        // Списываем ингредиенты из инвентаря
+        Object.entries(selectedIngredients).forEach(([type, qty]) => {
+            this.harvestInventory[type] -= qty;
+        });
+    
+        // Обновляем состояние котла
+        this.cauldron.brewing = true;
+        this.cauldron.ready = false;
+        this.cauldron.progress = 0;
+        this.cauldron.currentIngredients = selectedIngredients;
+        this.cauldron.brewStartTime = Date.now();
+    
+        this.updateInventoryDisplay();
         this.updateCauldronUI();
         this.saveCauldron();
-        this.showMessage('⚗️', `Сварено ${totalPotions} × ${potionName}!`);
+        this.showMessage('🔥', 'Варка началась!');
+    
+        // ⚗️ Запускаем плавный прогресс варки
+        const brewLoop = () => {
+            if (!this.cauldron.brewing) return;
+    
+            const elapsed = Date.now() - this.cauldron.brewStartTime;
+            const progress = (elapsed / this.cauldron.brewTime) * 100;
+            this.cauldron.progress = Math.min(progress, 100);
+            this.updateCauldronUI();
+    
+            if (this.cauldron.progress >= 100) {
+                this.finishBrewing();
+            } else {
+                requestAnimationFrame(brewLoop);
+            }
+        };
+    
+        // Запускаем цикл
+        requestAnimationFrame(brewLoop);
     }
+
 
 
     
@@ -2048,6 +2077,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
