@@ -137,6 +137,7 @@ class DarkFarmGame {
         this.initShop();
         this.updateInventoryDisplay();
         this.renderFarm();
+        this.initCauldron();
         this.initFirebase();
         this.calculateOfflineProgress();
         this.setupBeforeUnload();
@@ -1675,6 +1676,174 @@ class DarkFarmGame {
             }
         }
     }
+        // =============================
+    // 🔮 АЛХИМИЧЕСКИЙ КОТЁЛ
+    // =============================
+    initCauldron() {
+        this.cauldron = {
+            unlocked: false,
+            brewing: false,
+            ready: false,
+            progress: 0,
+            brewTime: 15000, // 15 сек варки
+            currentIngredient: null,
+            result: null
+        };
+    
+        // Кнопки
+        this.cauldronElement = document.getElementById('cauldron');
+        this.buyBtn = document.getElementById('buyCauldronBtn');
+        this.startBtn = document.getElementById('startBrewBtn');
+        this.collectBtn = document.getElementById('collectPotionBtn');
+        this.progressFill = document.getElementById('cauldronProgress');
+        this.info = document.getElementById('cauldronInfo');
+    
+        this.buyBtn.addEventListener('click', () => this.buyCauldron());
+        this.startBtn.addEventListener('click', () => this.startBrewing());
+        this.collectBtn.addEventListener('click', () => this.collectPotion());
+    
+        this.updateCauldronUI();
+    }
+    
+    buyCauldron() {
+        if (this.cauldron.unlocked) return;
+        if (this.souls >= 500) {
+            this.souls -= 500;
+            this.cauldron.unlocked = true;
+            this.showMessage('⚗️', 'Алхимический котёл приобретён!');
+            this.updateDisplay();
+            this.updateCauldronUI();
+            this.saveGameToCloud();
+        } else {
+            this.showMessage('💀', 'Недостаточно душ!');
+        }
+    }
+    
+    startBrewing() {
+        if (!this.cauldron.unlocked || this.cauldron.brewing) return;
+    
+        // Проверяем, есть ли хоть один собранный цветок
+        const available = Object.entries(this.harvestInventory).find(([type, count]) => count > 0);
+        if (!available) {
+            this.showMessage('🌾', 'Нет ингредиентов для варки!');
+            return;
+        }
+    
+        const [ingredient, count] = available;
+        this.harvestInventory[ingredient]--;
+        this.cauldron.currentIngredient = ingredient;
+        this.cauldron.brewing = true;
+        this.cauldron.progress = 0;
+        this.cauldron.ready = false;
+    
+        this.showMessage('🔥', 'Началась варка зелья...');
+        this.updateCauldronUI();
+    
+        const interval = setInterval(() => {
+            if (!this.cauldron.brewing) {
+                clearInterval(interval);
+                return;
+            }
+            this.cauldron.progress += 100 / (this.cauldron.brewTime / 200);
+            if (this.cauldron.progress >= 100) {
+                this.cauldron.progress = 100;
+                this.cauldron.brewing = false;
+                this.cauldron.ready = true;
+                this.cauldron.result = this.generatePotion(this.cauldron.currentIngredient);
+                this.showMessage('✨', 'Зелье готово!');
+                clearInterval(interval);
+            }
+            this.updateCauldronUI();
+        }, 200);
+    }
+    
+    generatePotion(ingredient) {
+        const map = {
+            'crystal_flower': '💎 Зелье ясности',
+            'blood_rose': '🩸 Зелье силы',
+            'moonlight_lily': '🌙 Эликсир ночи',
+            'phantom_orchid': '👻 Зелье духов',
+            'ghost_pumpkin': '🎃 Зелье кошмаров',
+            'shadow_berry': '🍇 Зелье теней',
+            'void_mushroom': '🍄 Эликсир пустоты'
+        };
+        return map[ingredient] || '🧪 Таинственное зелье';
+    }
+    
+    collectPotion() {
+        if (!this.cauldron.ready) return;
+    
+        const potion = this.cauldron.result || '🧪 Неизвестное зелье';
+        this.showMessage('🧪', `${potion} получено!`);
+    
+        // Награда: добавляем души
+        const reward = Math.floor(Math.random() * 100) + 150;
+        this.souls += reward;
+    
+        this.cauldron.ready = false;
+        this.cauldron.result = null;
+        this.cauldron.currentIngredient = null;
+        this.cauldron.progress = 0;
+    
+        this.updateDisplay();
+        this.updateCauldronUI();
+        this.saveGameToCloud();
+    }
+    
+    updateCauldronUI() {
+        if (!this.cauldronElement) return;
+        const el = this.cauldronElement;
+    
+        if (!this.cauldron.unlocked) {
+            el.classList.add('locked');
+            this.info.textContent = 'Не куплен';
+            this.buyBtn.disabled = false;
+            this.startBtn.disabled = true;
+            this.collectBtn.disabled = true;
+            this.progressFill.style.width = '0%';
+            return;
+        }
+    
+        el.classList.remove('locked');
+        if (this.cauldron.brewing) {
+            el.classList.add('working');
+            el.classList.remove('ready');
+            this.progressFill.style.width = `${this.cauldron.progress}%`;
+            this.info.textContent = 'Варится...';
+            this.buyBtn.disabled = true;
+            this.startBtn.disabled = true;
+            this.collectBtn.disabled = true;
+        } else if (this.cauldron.ready) {
+            el.classList.remove('working');
+            el.classList.add('ready');
+            this.progressFill.style.width = '100%';
+            this.info.textContent = 'Готово!';
+            this.buyBtn.disabled = true;
+            this.startBtn.disabled = true;
+            this.collectBtn.disabled = false;
+        } else {
+            el.classList.remove('working', 'ready');
+            this.progressFill.style.width = '0%';
+            this.info.textContent = 'Готов к варке';
+            this.buyBtn.disabled = true;
+            this.startBtn.disabled = false;
+            this.collectBtn.disabled = true;
+        }
+    }
+    
+    showMessage(emoji, text) {
+        const msg = document.createElement('div');
+        msg.className = 'purchase-message';
+        msg.innerHTML = `<span class="purchase-emoji">${emoji}</span><span class="purchase-text">${text}</span>`;
+        document.body.appendChild(msg);
+        setTimeout(() => msg.classList.add('show'), 100);
+        setTimeout(() => {
+            msg.classList.remove('show');
+            setTimeout(() => msg.remove(), 500);
+        }, 3000);
+    }
+
+    
 }
 
 let game;
@@ -1706,6 +1875,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
