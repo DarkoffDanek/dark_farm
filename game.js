@@ -1869,20 +1869,36 @@ class DarkFarmGame {
     
     generatePotionResult(ingredients) {
         const types = Object.keys(ingredients);
-        if (types.length === 1) {
-            const type = types[0];
-            return {
-                'shadow_berry': '🍇 Зелье теней',
-                'ghost_pumpkin': '🎃 Зелье кошмаров',
-                'void_mushroom': '🍄 Эликсир пустоты',
-                'crystal_flower': '💎 Зелье ясности',
-                'blood_rose': '🩸 Зелье силы',
-                'moonlight_lily': '🌙 Эликсир ночи',
-                'phantom_orchid': '💮 Зелье духов'
-            }[type] || '🧪 Таинственное зелье';
-        }
-        return '⚗️ Сложное зелье';
+        const roll = Math.random();
+        let rarity = 'common';
+        if (roll > 0.9) rarity = 'legendary';
+        else if (roll > 0.6) rarity = 'rare';
+    
+        const icons = {
+            common: '🧪',
+            rare: '💎',
+            legendary: '🌟'
+        };
+    
+        const typesMap = {
+            'shadow_berry': 'Зелье теней',
+            'ghost_pumpkin': 'Зелье кошмаров',
+            'void_mushroom': 'Эликсир пустоты',
+            'crystal_flower': 'Зелье ясности',
+            'blood_rose': 'Зелье силы',
+            'moonlight_lily': 'Эликсир ночи',
+            'phantom_orchid': 'Зелье духов'
+        };
+    
+        const baseName = typesMap[types[0]] || 'Таинственное зелье';
+        const potionName = `${icons[rarity]} ${baseName}`;
+    
+        // Сохраняем редкость для визуала
+        this.cauldron.lastPotionRarity = rarity;
+    
+        return potionName;
     }
+
     
     // Просмотр накопленных зелий
     openPotionStorage() {
@@ -1996,6 +2012,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
