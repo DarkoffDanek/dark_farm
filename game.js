@@ -152,7 +152,7 @@ class DarkFarmGame {
         this.initFirebase();
         this.calculateOfflineProgress();
         this.setupBeforeUnload();
-        
+        this.setupFarmToggle();
         setTimeout(() => {
             if (!this.auth) {
                 console.warn("Firebase Auth все еще не инициализирован, пробуем снова...");
@@ -751,12 +751,27 @@ class DarkFarmGame {
             }
         }
     }
+    setupFarmToggle() {
+        const toggleBtn = document.getElementById('toggleFarm');
+        const farmArea = document.getElementById('farmArea');
         
+        if (toggleBtn && farmArea) {
+            toggleBtn.addEventListener('click', () => {
+                farmArea.classList.toggle('collapsed');
+                toggleBtn.textContent = farmArea.classList.contains('collapsed') 
+                    ? 'Развернуть грядки' 
+                    : 'Свернуть грядки';
+            });
+        }
+    }
     updateInventoryDisplay() {
         const inventoryItems = document.getElementById("inventoryItems");
         if (!inventoryItems) return;
         inventoryItems.innerHTML = "";
-    
+        const farmTitle = document.querySelector('.farm-title');
+        if (farmTitle) {
+            farmTitle.textContent = `🌿 Ваши грядки (${this.plots.length}/${this.maxPlots})`;
+        }
         let hasItems = false;
     
         // Отображаем растения
@@ -2177,6 +2192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
