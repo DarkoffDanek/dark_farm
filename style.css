@@ -2592,4 +2592,143 @@ h1, h3 {
     transform: none !important;
     box-shadow: none !important;
 }
+/* Стили для склада зелий */
+.potion-storage-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.potion-storage-controls button {
+    flex: 1;
+}
+
+.potion-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.potion-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.potion-emoji {
+    font-size: 1.5em;
+}
+
+.potion-name {
+    font-weight: bold;
+    color: #e94560;
+}
+
+.potion-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+}
+
+.potion-count, .potion-price, .potion-total {
+    font-size: 0.9em;
+    color: #c9c9c9;
+}
+
+.potion-total {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.sell-potion-btn {
+    background: linear-gradient(135deg, #e94560, #ff6b95);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.sell-potion-btn:hover {
+    background: linear-gradient(135deg, #ff6b95, #e94560);
+    transform: translateY(-2px);
+}
+
+.potion-total-value {
+    text-align: center;
+    padding: 15px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 8px;
+    margin-top: 10px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    color: #4CAF50;
+}
+
+/* Стили для сворачиваемой области грядки */
+.farm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 0 10px;
+}
+
+.farm-title {
+    color: #e94560;
+    margin: 0;
+}
+
+.toggle-farm-btn {
+    background: #5d3891;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.toggle-farm-btn:hover {
+    background: #6d4891;
+    transform: translateY(-2px);
+}
+
+.farm-area.collapsed {
+    display: none;
+}
+
+/* Адаптивность для нового интерфейса */
+@media (max-width: 768px) {
+    .potion-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .potion-info, .potion-details {
+        justify-content: center;
+    }
+    
+    .potion-storage-controls {
+        flex-direction: column;
+    }
+    
+    .farm-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
 
