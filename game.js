@@ -1,471 +1,383 @@
-// game.js
 class DarkFarmGame {
     constructor() {
         this.souls = 0;
         this.darkEssence = 100;
         this.seedsInventory = {};
         this.harvestInventory = {};
-        this.elixirInventory = {};
-        this.shopCounters = {};
-        this.exchangeCounter = 1;
-        this.plotCounter = 1;
-        this.sellCounters = {};
         
-        // Грядки
+        // Начальные грядки - 3 штуки
         this.plots = [];
         this.initialPlots = 3;
-        this.maxPlots = 31;
+        this.maxPlots = 30;
         this.plotPrice = 25;
         
-        // Состояния интерфейса
-        this.shopOpen = false;
-        this.inventoryOpen = false;
+        // Настройки обмена валюты
+        this.exchangeRate = 5;
+        this.exchangeAmount = 10;
         
-        // Алхимический котел
-        this.alchemyCauldron = {
-            owned: false,
-            working: false,
-            progress: 0,
-            currentRecipe: null,
-            startTime: null,
-            totalTime: 0,
-            inputQuantity: 0,
-            outputQuantity: 0,
-            endTime: null
-        };
+        // Система аккаунтов
+        this.currentUser = null;
+        this.autoSaveInterval = null;
         
-        // Типы семян
+        // Создаем начальные грядки
+        for (let i = 0; i < this.initialPlots; i++) {
+            this.addNewPlot();
+        }
+        
+        this.lastUpdate = Date.now();
+        
         this.seedTypes = {
             'shadow_berry': {
                 name: 'Теневая ягода',
-                emoji: '🍇',
-                time: 20000,
-                clicks: 7,
+                emoji: '🌑',
+                time: 10000,
+                clicks: 5,
                 buyPrice: 10,
                 baseSellPrice: 5,
                 description: 'Быстрорастущая, но дешёвая',
-                dropChance: 0.5
+                dropChance: 0.6
             },
             'ghost_pumpkin': {
                 name: 'Призрачная тыква',
                 emoji: '🎃',
-                time: 50000,
-                clicks: 40,
+                time: 20000,
+                clicks: 8,
                 buyPrice: 25,
                 baseSellPrice: 15,
                 description: 'Средняя скорость, хорошая цена',
-                dropChance: 0.35
+                dropChance: 0.5
             },
             'void_mushroom': {
                 name: 'Гриб пустоты',
                 emoji: '🍄',
-                time: 100000,
-                clicks: 300,
+                time: 30000,
+                clicks: 12,
                 buyPrice: 50,
-                baseSellPrice: 28,
+                baseSellPrice: 35,
                 description: 'Растёт медленно, но дорого стоит',
-                dropChance: 0.3
+                dropChance: 0.4
             },
             'crystal_flower': {
                 name: 'Хрустальный цветок',
                 emoji: '🌷',
-                time: 800000,
-                clicks: 800,
+                time: 45000,
+                clicks: 15,
                 buyPrice: 80,
-                baseSellPrice: 37,
+                baseSellPrice: 60,
                 description: 'Ценный, но требует терпения',
-                dropChance: 0.28
+                dropChance: 0.35
             },
             'blood_rose': {
                 name: 'Кровавая роза',
                 emoji: '🌹',
-                time: 5400000,
-                clicks: 1800,
+                time: 60000,
+                clicks: 20,
                 buyPrice: 120,
-                baseSellPrice: 60,
-                description: 'Очень редкая и дорогая',
-                dropChance: 0.15
-            }
-        };
-        
-        // Рецепты эликсиров
-        this.elixirRecipes = {
-            'shadow_berry': {
-                name: 'Теневой Нектар',
-                emoji: '🍷',
-                baseSellPrice: 15,
-                description: 'Лёгкий напиток из теневых ягод',
-                brewingTime: 15000,
-                outputMultiplier: 1
-            },
-            'ghost_pumpkin': {
-                name: 'Призрачный Эликсир',
-                emoji: '👻',
-                baseSellPrice: 25,
-                description: 'Эфирная субстанция из призрачной тыквы',
-                brewingTime: 30000,
-                outputMultiplier: 1
-            },
-            'void_mushroom': {
-                name: 'Эликсир Пустоты',
-                emoji: '⚫',
-                baseSellPrice: 45,
-                description: 'Концентрированная энергия небытия',
-                brewingTime: 60000,
-                outputMultiplier: 1
-            },
-            'crystal_flower': {
-                name: 'Кристальный Настой',
-                emoji: '💎',
-                baseSellPrice: 65,
-                description: 'Сияющая жидкость с частицами кристаллов',
-                brewingTime: 120000,
-                outputMultiplier: 1
-            },
-            'blood_rose': {
-                name: 'Кровавый Отвар',
-                emoji: '🩸',
                 baseSellPrice: 100,
-                description: 'Густая тёмная жидкость с металлическим блеском',
-                brewingTime: 240000,
-                outputMultiplier: 1
+                description: 'Очень редкая и дорогая',
+                dropChance: 0.3
+            },
+            'moonlight_lily': {
+                name: 'Лунная лилия',
+                emoji: '🌸',
+                time: 90000,
+                clicks: 25,
+                buyPrice: 200,
+                baseSellPrice: 180,
+                description: 'Цветёт только в лунном свете',
+                dropChance: 0.25
+            },
+            'phantom_orchid': {
+                name: 'Фантомная орхидея',
+                emoji: '💮',
+                time: 120000,
+                clicks: 30,
+                buyPrice: 300,
+                baseSellPrice: 250,
+                description: 'Легендарное растение из иного мира',
+                dropChance: 0.2
             }
         };
         
-        // Инициализация счетчиков магазина
-        Object.keys(this.seedTypes).forEach(seedType => {
-            this.shopCounters[seedType] = 1;
-            this.sellCounters[seedType] = 1;
-        });
+        this.shopOpen = false;
+        this.inventoryOpen = false;
         
-        // Загрузка и инициализация
-        this.loadFromLocalStorage();
-        
-        if (this.plots.length === 0) {
-            for (let i = 0; i < this.initialPlots; i++) {
-                this.addNewPlot();
-            }
-        }
-        
-        this.lastUpdate = Date.now();
+        this.setupAuthModal();
         this.startGameLoop();
         this.initShop();
         this.updateInventoryDisplay();
         this.renderFarm();
-        this.renderBuildings();
+        this.firebaseConfig = {
+            apiKey: "your_api_key",
+            authDomain: "your_project_id.firebaseapp.com",
+            projectId: "your_project_id",
+            storageBucket: "your_project_id.appspot.com",
+            messagingSenderId: "your_sender_id",
+            appId: "your_app_id"
+        };
+        
+        this.firebaseApp = null;
+        this.db = null;
+        this.auth = null;
+        
+        this.initFirebase();
     }
 
-    // ========== АЛХИМИЧЕСКИЙ КОТЕЛ ==========
+    // ========== СИСТЕМА АККАУНТОВ ==========
+    // Firebase configuration - ДОБАВИТЬ ЭТОТ БЛОК
 
-    renderBuildings() {
-        const buildingsContainer = document.getElementById('buildingsContainer');
-        if (!buildingsContainer) return;
-        
-        buildingsContainer.innerHTML = '';
     
-        const cauldron = document.createElement('div');
-        cauldron.className = `cauldron-building ${!this.alchemyCauldron.owned ? 'locked' : ''} ${this.alchemyCauldron.working ? 'working' : ''} ${this.alchemyCauldron.progress >= 100 ? 'ready' : ''}`;
-    
-        if (!this.alchemyCauldron.owned) {
-            // Котел не куплен - код без изменений
-            cauldron.innerHTML = `
-                <div class="cauldron-emoji">🧪</div>
-                <div class="cauldron-name">Алхимический Котёл</div>
-                <div class="cauldron-price">Цена: 500 душ</div>
-                <div class="cauldron-description">Превращает цветы в магические эликсиры</div>
-                <div class="cauldron-stats">Увеличивает стоимость урожая в 1.5-2 раза</div>
-                <div class="cauldron-info">Требуется для создания эликсиров</div>
-                <button class="cauldron-buy-btn" onclick="game.buyCauldron()" 
-                        ${this.souls >= 500 ? '' : 'disabled'}>
-                    Купить за 500 душ
-                </button>
-            `;
-        } else if (this.alchemyCauldron.working) {
-            // Котел работает - ИСПРАВЛЕНО: используем progress из состояния
-            const recipe = this.elixirRecipes[this.alchemyCauldron.currentRecipe];
-            if (!recipe) return;
-            
-            const timeLeft = Math.max(0, this.alchemyCauldron.endTime - Date.now());
-            const progress = this.alchemyCauldron.progress; // Используем сохранённый прогресс
-            
-            cauldron.innerHTML = `
-                <div class="cauldron-emoji">🧪</div>
-                <div class="cauldron-name">Алхимический Котёл</div>
-                <div class="cauldron-status">🔄 Варится: ${recipe.name}</div>
-                
-                <div class="cauldron-progress">
-                    <div class="cauldron-progress-info">
-                        Осталось: ${Math.ceil(timeLeft / 1000)} сек
-                    </div>
-                    <div class="cauldron-progress-bar">
-                        <div class="cauldron-progress-fill" style="width: ${progress}%"></div>
-                    </div>
-                </div>
-                
-                <div class="cauldron-info">
-                    Создаёт: ${this.alchemyCauldron.outputQuantity} эликсира
-                </div>
-                
-                <button class="cauldron-collect-btn" onclick="game.collectElixir()" 
-                        ${progress >= 100 ? '' : 'disabled'}>
-                    ${progress >= 100 ? '🎁 Забрать эликсир!' : '⏳ Ещё не готово'}
-                </button>
-            `;
-        } else {
-            // Котел готов к работе - ИСПРАВЛЕНО: правильное обновление количества
-            const availableRecipes = Object.keys(this.elixirRecipes)
-                .filter(recipeType => (this.harvestInventory[recipeType] || 0) > 0);
-            
-            cauldron.innerHTML = `
-                <div class="cauldron-emoji">🧪</div>
-                <div class="cauldron-name">Алхимический Котёл</div>
-                <div class="cauldron-status">✅ Готов к работе</div>
-                <div class="cauldron-description">Выберите цветы для переработки в эликсир</div>
-                
-                <div class="cauldron-controls">
-                    <div class="cauldron-input-label">Тип цветов:</div>
-                    <select class="cauldron-seed-select" id="cauldronRecipeType" onchange="game.updateCauldronMaxQuantity()">
-                        <option value="">-- Выберите цветы --</option>
-                        ${availableRecipes.map(recipeType => {
-                            const recipe = this.elixirRecipes[recipeType];
-                            const seed = this.seedTypes[recipeType];
-                            return `<option value="${recipeType}">${seed.name} (доступно: ${this.harvestInventory[recipeType] || 0}) → ${recipe.name}</option>`;
-                        }).join('')}
-                    </select>
-                    
-                    <div class="cauldron-input-label">Количество цветов:</div>
-                    <div class="cauldron-quantity">
-                        <button class="cauldron-quantity-btn" onclick="game.decrementCauldronQuantity()">-</button>
-                        <input type="number" class="cauldron-quantity-input" id="cauldronQuantity" value="1" min="1" max="10" onchange="game.updateCauldronMaxQuantity()">
-                        <button class="cauldron-quantity-btn" onclick="game.incrementCauldronQuantity()">+</button>
-                    </div>
-                </div>
-                
-                <button class="cauldron-start-btn" onclick="game.startBrewing()" id="startBrewingBtn">
-                    Начать варку эликсира
-                </button>
-            `;
-            
-            // Обновляем максимальное количество сразу после создания
-            setTimeout(() => {
-                this.updateCauldronMaxQuantity();
-            }, 0);
-        }
-        
-        buildingsContainer.appendChild(cauldron);
-    }
-    
-    buyCauldron() {
-        if (this.souls >= 500 && !this.alchemyCauldron.owned) {
-            this.souls -= 500;
-            this.alchemyCauldron.owned = true;
-            
-            this.updateDisplay();
-            this.renderBuildings();
-            this.saveToLocalStorage();
-            
-            this.showMessage('🧪', 'Куплен Алхимический Котёл!', 'success');
-            return true;
-        }
-        return false;
-    }
-    
-    updateCauldronMaxQuantity() {
-        const recipeTypeSelect = document.getElementById('cauldronRecipeType');
-        const quantityInput = document.getElementById('cauldronQuantity');
-        
-        if (!recipeTypeSelect || !quantityInput) {
-            console.log('Elements not found in updateCauldronMaxQuantity');
-            return;
-        }
-        
-        const recipeType = recipeTypeSelect.value;
-        console.log('Selected recipe type:', recipeType);
-        
-        if (recipeType && this.harvestInventory[recipeType] !== undefined) {
-            const available = this.harvestInventory[recipeType] || 0;
-            const maxQuantity = Math.min(10, available);
-            console.log('Available:', available, 'Max quantity:', maxQuantity);
-            
-            quantityInput.max = maxQuantity;
-            
-            let currentValue = parseInt(quantityInput.value) || 1;
-            if (currentValue > maxQuantity) {
-                quantityInput.value = maxQuantity;
-            } else if (currentValue < 1) {
-                quantityInput.value = 1;
-            }
-        } else {
-            quantityInput.max = 1;
-            quantityInput.value = 1;
-        }
-    }
-    incrementCauldronQuantity() {
-        const input = document.getElementById('cauldronQuantity');
-        const recipeTypeSelect = document.getElementById('cauldronRecipeType');
-        
-        if (!input || !recipeTypeSelect) return;
-        
-        const recipeType = recipeTypeSelect.value;
-        if (!recipeType) return;
-        
-        const maxQuantity = Math.min(10, this.harvestInventory[recipeType] || 0);
-        let value = parseInt(input.value) || 1;
-        
-        if (value < maxQuantity) {
-            value++;
-            input.value = value;
-        }
-        
-        this.updateCauldronMaxQuantity(); // Обновляем максимум после изменения
-    }
-    
-    decrementCauldronQuantity() {
-        const input = document.getElementById('cauldronQuantity');
-        if (!input) return;
-        
-        let value = parseInt(input.value) || 1;
-        
-        if (value > 1) {
-            value--;
-            input.value = value;
-        }
-        
-        this.updateCauldronMaxQuantity(); // Обновляем максимум после изменения
-    }
-    
-    startBrewing() {
-        const recipeTypeSelect = document.getElementById('cauldronRecipeType');
-        const quantityInput = document.getElementById('cauldronQuantity');
-        
-        if (!recipeTypeSelect || !quantityInput) return;
-        
-        const recipeType = recipeTypeSelect.value;
-        const quantity = parseInt(quantityInput.value) || 1;
-        
-        if (!recipeType) {
-            this.showMessage('⚠️', 'Выберите тип цветов для переработки!', 'error');
-            return;
-        }
-        
-        if (!this.harvestInventory[recipeType] || this.harvestInventory[recipeType] < quantity) {
-            this.showMessage('⚠️', 'Недостаточно выбранных цветов!', 'error');
-            return;
-        }
-        
-        // Проверяем, не работает ли уже котел
-        if (this.alchemyCauldron.working) {
-            this.showMessage('⚠️', 'Котёл уже работает! Дождитесь окончания текущей варки.', 'error');
-            return;
-        }
-        
-        // Забираем цветы из инвентаря
-        this.harvestInventory[recipeType] -= quantity;
-        
-        // Настраиваем процесс варки
-        const recipe = this.elixirRecipes[recipeType];
-        this.alchemyCauldron.working = true;
-        this.alchemyCauldron.currentRecipe = recipeType;
-        this.alchemyCauldron.progress = 0;
-        this.alchemyCauldron.startTime = Date.now();
-        this.alchemyCauldron.totalTime = recipe.brewingTime * quantity;
-        this.alchemyCauldron.inputQuantity = quantity;
-        this.alchemyCauldron.outputQuantity = quantity * recipe.outputMultiplier;
-        this.alchemyCauldron.endTime = Date.now() + (recipe.brewingTime * quantity);
-        
-        this.updateDisplay();
-        this.renderBuildings();
-        this.updateInventoryDisplay();
-        this.saveToLocalStorage();
-        
-        this.showMessage('🔥', `Начата варка ${recipe.name}!`, 'success');
-    }
-    
-    collectElixir() {
-        if (!this.alchemyCauldron.working || this.alchemyCauldron.progress < 100) {
-            this.showMessage('⚠️', 'Эликсир ещё не готов!', 'error');
-            return;
-        }
-        
-        const recipeType = this.alchemyCauldron.currentRecipe;
-        const recipe = this.elixirRecipes[recipeType];
-        
-        if (!recipe) return;
-        
-        // Добавляем эликсир в инвентарь
-        if (!this.elixirInventory[recipeType]) {
-            this.elixirInventory[recipeType] = 0;
-        }
-        this.elixirInventory[recipeType] += this.alchemyCauldron.outputQuantity;
-        
-        // Сбрасываем состояние котла
-        this.alchemyCauldron.working = false;
-        this.alchemyCauldron.currentRecipe = null;
-        this.alchemyCauldron.progress = 0;
-        this.alchemyCauldron.startTime = null;
-        this.alchemyCauldron.endTime = null;
-        this.alchemyCauldron.totalTime = 0;
-        this.alchemyCauldron.inputQuantity = 0;
-        this.alchemyCauldron.outputQuantity = 0;
-        
-        this.updateDisplay();
-        this.renderBuildings();
-        this.updateInventoryDisplay();
-        this.saveToLocalStorage();
-        
-        this.showMessage(recipe.emoji, `Создано ${this.alchemyCauldron.outputQuantity} эликсира ${recipe.name}!`, 'success');
-    }
-    updateCauldronProgress() {
-        if (this.alchemyCauldron.working && this.alchemyCauldron.startTime) {
-            const now = Date.now();
-            const elapsed = now - this.alchemyCauldron.startTime;
-            this.alchemyCauldron.progress = Math.min(100, (elapsed / this.alchemyCauldron.totalTime) * 100);
-            
-            // Обновляем endTime на случай, если игра была перезагружена
-            if (this.alchemyCauldron.endTime) {
-                const timeLeft = this.alchemyCauldron.endTime - now;
-                if (timeLeft <= 0) {
-                    this.alchemyCauldron.progress = 100;
+
+    checkAuthState() {
+        if (this.auth) {
+            this.auth.onAuthStateChanged((user) => {
+                if (user) {
+                    this.currentUser = user;
+                    document.getElementById('authButton').textContent = `🚪 ${user.email}`;
+                    this.loadGameFromCloud();
                 }
-            }
-            
-            // Принудительно обновляем отображение каждую секунду
-            if (Math.floor(now / 1000) !== Math.floor(this.lastUpdate / 1000)) {
-                this.renderBuildings();
-            }
-            
-            this.saveToLocalStorage();
+            });
         }
+    }
+    setupAuthModal() {
+        const authButton = document.getElementById('authButton');
+        const modal = document.getElementById('authModal');
+        const closeBtn = document.querySelector('.close');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+
+        authButton.addEventListener('click', () => {
+            if (this.currentUser) {
+                this.logout();
+            } else {
+                this.showAuthModal();
+            }
+        });
+
+        closeBtn.addEventListener('click', () => this.hideAuthModal());
+        
+        showRegister.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+        });
+        
+        showLogin.addEventListener('click', () => {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        });
+
+        // Обработчики форм
+        document.getElementById('loginSubmit').addEventListener('click', () => this.login());
+        document.getElementById('registerSubmit').addEventListener('click', () => this.register());
+
+        // Обработка нажатия Enter
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.login();
+        });
+        document.getElementById('registerPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.register();
+        });
+        this.checkAuthState();
+    }
+    initFirebase() {
+        if (typeof firebase !== 'undefined') {
+            this.firebaseApp = firebase.initializeApp(this.firebaseConfig);
+            this.db = firebase.firestore();
+            this.auth = firebase.auth();
+        }
+    }
+
+
+    showAuthModal() {
+        document.getElementById('authModal').classList.remove('hidden');
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('registerForm').classList.add('hidden');
+        document.getElementById('authStatus').textContent = '';
+        document.getElementById('loginUsername').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('registerUsername').value = '';
+        document.getElementById('registerPassword').value = '';
+        document.getElementById('registerConfirm').value = '';
+    }
+
+    hideAuthModal() {
+        document.getElementById('authModal').classList.add('hidden');
+    }
+
+    async login() {
+        const email = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const status = document.getElementById('authStatus');
+        
+        try {
+            await this.auth.signInWithEmailAndPassword(email, password);
+            this.hideAuthModal();
+            status.textContent = '';
+        } catch (error) {
+            status.textContent = 'Ошибка входа: ' + error.message;
+            status.className = 'auth-status error';
+        }
+    }
+    
+    async register() {
+        const email = document.getElementById('registerUsername').value.trim();
+        const password = document.getElementById('registerPassword').value;
+        const confirm = document.getElementById('registerConfirm').value;
+        const status = document.getElementById('authStatus');
+        if (!email || !password || !confirm) {
+            status.textContent = 'Заполните все поля!';
+            status.className = 'auth-status error';
+            return;
+        }
+
+        if (password !== confirm) {
+            status.textContent = 'Пароли не совпадают!';
+            status.className = 'auth-status error';
+            return;
+        }
+    
+        try {
+            await this.auth.createUserWithEmailAndPassword(email, password);
+            await this.createNewUserData();
+            this.hideAuthModal();
+            status.textContent = '';
+        } catch (error) {
+            status.textContent = 'Ошибка регистрации: ' + error.message;
+            status.className = 'auth-status error';
+        }
+    }
+    
+
+        // Показываем форму входа
+
+
+
+    async logout() {
+        await this.saveGameToCloud();
+        if (this.auth) {
+            await this.auth.signOut();
+        }
+        this.currentUser = null;
+        document.getElementById('authButton').textContent = '🔐 Войти в аккаунт';
+        this.stopAutoSave();
+        this.resetGame();
+    }
+    async saveGameToCloud() {
+        if (!this.currentUser) return;
+        
+        const gameData = {
+            souls: this.souls,
+            darkEssence: this.darkEssence,
+            seedsInventory: this.seedsInventory,
+            harvestInventory: this.harvestInventory,
+            plots: this.plots,
+            lastUpdate: Date.now()
+        };
+        
+        try {
+            await this.db.collection('users').doc(this.currentUser.uid).set({
+                gameData: gameData,
+                lastSaved: new Date()
+            });
+        } catch (error) {
+            console.error('Ошибка сохранения:', error);
+        }
+    }
+    resetGame() {
+        this.souls = 0;
+        this.darkEssence = 100;
+        this.seedsInventory = {};
+        this.harvestInventory = {};
+        this.plots = [];
+        for (let i = 0; i < this.initialPlots; i++) {
+            this.addNewPlot();
+        }
+        this.updateDisplay();
+        this.initShop();
+        this.updateInventoryDisplay();
+        this.renderFarm();
+    }
+    async loadGameFromCloud() {
+        if (!this.currentUser) return;
+        
+        try {
+            const doc = await this.db.collection('users').doc(this.currentUser.uid).get();
+            
+            if (doc.exists) {
+                const userData = doc.data();
+                const gameData = userData.gameData;
+                
+                // Восстановите все данные игры из gameData
+                this.souls = gameData.souls || 0;
+                this.darkEssence = gameData.darkEssence || 100;
+                this.seedsInventory = gameData.seedsInventory || {};
+                this.harvestInventory = gameData.harvestInventory || {};
+                this.plots = gameData.plots || [];
+
+                // Обновите интерфейс
+                this.renderFarm();
+                this.updateDisplay();
+                this.initShop();
+                this.updateInventoryDisplay();
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки:', error);
+        }
+        this.startAutoSave();
+    }
+    startAutoSave() {
+            // Автосохранение каждые 30 секунд
+        this.autoSaveInterval = setInterval(() => {
+            this.saveGameToCloud();
+        }, 30000);
+    }
+
+    stopAutoSave() {
+        if (this.autoSaveInterval) {
+            clearInterval(this.autoSaveInterval);
+            this.autoSaveInterval = null;
+        }
+    }
+    
+    async createNewUserData() {
+        const gameData = {
+            souls: 0,
+            darkEssence: 100,
+            seedsInventory: {},
+            harvestInventory: {},
+            plots: [],
+            lastUpdate: Date.now()
+        };
+        
+        // Создайте начальные грядки
+        for (let i = 0; i < this.initialPlots; i++) {
+            this.addNewPlot();
+        }
+        gameData.plots = this.plots;
+        
+        await this.saveGameToCloud();
     }
 
     // ========== ОСНОВНЫЕ МЕТОДЫ ИГРЫ ==========
 
+    // Добавьте вызов saveGameToStorage() в ключевые методы:
     buySeed(seedType) {
         const seedData = this.seedTypes[seedType];
-        const quantity = this.shopCounters[seedType] || 1;
-        const totalPrice = seedData.buyPrice * quantity;
-        
-        if (this.darkEssence >= totalPrice) {
-            this.darkEssence -= totalPrice;
+        if (this.darkEssence >= seedData.buyPrice) {
+            this.darkEssence -= seedData.buyPrice;
             
             if (!this.seedsInventory[seedType]) {
                 this.seedsInventory[seedType] = 0;
             }
-            this.seedsInventory[seedType] += quantity;
-            
-            this.shopCounters[seedType] = 1;
+            this.seedsInventory[seedType]++;
             
             this.updateDisplay();
             this.initShop();
             this.updateInventoryDisplay();
-            this.saveToLocalStorage();
-            
-            this.showPurchaseMessage(seedData.emoji, seedData.name, quantity, totalPrice);
+            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
         }
-    }
-    
-    showPurchaseMessage(emoji, name, quantity, price) {
-        this.showMessage(emoji, `Куплено ${quantity} семян ${name} за ${price} эссенции!`, 'success');
     }
 
     plantSeed(plotIndex, seedType) {
@@ -485,7 +397,7 @@ class DarkFarmGame {
             
             this.updateDisplay();
             this.updateInventoryDisplay();
-            this.saveToLocalStorage();
+            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
         }
     }
 
@@ -495,11 +407,13 @@ class DarkFarmGame {
             const seedType = plot.type;
             const seedData = this.seedTypes[seedType];
             
+            // Добавляем урожай в инвентарь урожая
             if (!this.harvestInventory[seedType]) {
                 this.harvestInventory[seedType] = 0;
             }
             this.harvestInventory[seedType]++;
             
+            // Получаем случайное количество семян
             const seedDrop = this.getRandomSeedDrop(seedType);
             if (seedDrop > 0) {
                 if (!this.seedsInventory[seedType]) {
@@ -509,6 +423,7 @@ class DarkFarmGame {
                 this.showDropMessage(seedData.emoji, seedData.name, seedDrop);
             }
             
+            // Сбрасываем участок
             plot.planted = false;
             plot.growth = 0;
             plot.clicks = 0;
@@ -520,56 +435,51 @@ class DarkFarmGame {
             
             this.updateDisplay();
             this.updateInventoryDisplay();
-            this.saveToLocalStorage();
+            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+        }
+    }
+
+    sellHarvest(seedType) {
+        if (this.harvestInventory[seedType] > 0) {
+            const seedData = this.seedTypes[seedType];
+            this.souls += seedData.baseSellPrice;
+            this.harvestInventory[seedType]--;
+            
+            this.updateDisplay();
+            this.updateInventoryDisplay();
+            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
         }
     }
 
     buyEssence() {
-        const exchangeRate = 5;
-        const exchangeAmount = 1;
-        const totalCost = exchangeAmount * this.exchangeCounter;
-        const totalGain = exchangeAmount * exchangeRate * this.exchangeCounter;
-        
-        if (this.souls >= totalCost) {
-            this.souls -= totalCost;
-            this.darkEssence += totalGain;
-            
-            this.exchangeCounter = 1;
-            
+        if (this.souls >= this.exchangeAmount) {
+            this.souls -= this.exchangeAmount;
+            this.darkEssence += this.exchangeAmount * this.exchangeRate;
             this.updateDisplay();
             this.initShop();
-            this.saveToLocalStorage();
-            
-            this.showMessage('💱', `Обменяно ${totalCost} душ на ${totalGain} эссенции!`, 'success');
+            this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
             return true;
         }
         return false;
     }
-    
+
     buyPlot() {
-        const totalCost = this.plotPrice * this.plotCounter;
-        
-        if (this.souls >= totalCost && this.plots.length + this.plotCounter <= this.maxPlots) {
-            this.souls -= totalCost;
-            
-            for (let i = 0; i < this.plotCounter; i++) {
-                this.addNewPlot();
+        if (this.souls >= this.plotPrice && this.plots.length < this.maxPlots) {
+            this.souls -= this.plotPrice;
+            if (this.addNewPlot()) {
+                this.renderFarm();
+                this.initShop();
+                this.updateDisplay();
+                this.saveGameToCloud(); // АВТОСОХРАНЕНИЕ
+                return true;
             }
-            
-            this.plotCounter = 1;
-            
-            this.renderFarm();
-            this.initShop();
-            this.updateDisplay();
-            this.saveToLocalStorage();
-            
-            this.showMessage('🟫', `Куплено ${this.plotCounter} грядок за ${totalCost} душ!`, 'success');
-            return true;
-        } else if (this.plots.length + this.plotCounter > this.maxPlots) {
+        } else if (this.plots.length >= this.maxPlots) {
             alert('Достигнут максимум грядок!');
         }
         return false;
     }
+
+    // Метод для генерации случайного количества семян
     getRandomSeedDrop(seedType) {
         const seedData = this.seedTypes[seedType];
         const dropChance = seedData.dropChance;
@@ -585,6 +495,7 @@ class DarkFarmGame {
         return 0;
     }
     
+    // Метод для добавления новой грядки
     addNewPlot() {
         if (this.plots.length < this.maxPlots) {
             this.plots.push({
@@ -602,6 +513,7 @@ class DarkFarmGame {
         return false;
     }
     
+    // Метод для отображения фермы
     renderFarm() {
         const farmArea = document.getElementById('farmArea');
         farmArea.innerHTML = '';
@@ -610,29 +522,14 @@ class DarkFarmGame {
             const plotElement = document.createElement('div');
             plotElement.className = 'plot';
             plotElement.onclick = () => this.handlePlotClick(index);
-            
-            if (plot.planted) {
-                const seedData = this.seedTypes[plot.type];
-                if (plot.growth >= 100) {
-                    plotElement.textContent = seedData.emoji;
-                    plotElement.className = 'plot ready';
-                } else {
-                    const growthStage = Math.floor(plot.growth / 25);
-                    const stages = ['🌱', '🪴', '🌿', seedData.emoji];
-                    plotElement.textContent = stages[growthStage] || stages[0];
-                    plotElement.className = 'plot growing';
-                }
-            } else {
-                plotElement.textContent = '🟫';
-                plotElement.className = 'plot';
-            }
-            
+            plotElement.innerHTML = '🟫';
             farmArea.appendChild(plotElement);
         });
         
         this.updateDisplay();
     }
-
+    
+    // Обработчик клика по грядке
     handlePlotClick(plotIndex) {
         const plot = this.plots[plotIndex];
         if (plot.planted) {
@@ -652,6 +549,70 @@ class DarkFarmGame {
         }
     }
     
+    // Инициализация магазина
+    initShop() {
+        const shopItems = document.getElementById('shopItems');
+        shopItems.innerHTML = '';
+        
+        // Обмен валюты
+        const exchangeShopItem = document.createElement('div');
+        exchangeShopItem.className = 'shop-item exchange-shop-item';
+        const canExchange = this.souls >= this.exchangeAmount;
+        
+        exchangeShopItem.innerHTML = `
+            <div class="item-emoji">💱</div>
+            <div class="item-name">Обмен валюты</div>
+            <div class="item-price">${this.exchangeAmount} душ → ${this.exchangeAmount * this.exchangeRate} эссенции</div>
+            <div class="item-growth">Курс: 1 душа = ${this.exchangeRate} эссенции</div>
+            <div class="item-description">Обменяйте души на эссенцию для покупки семян</div>
+            <button class="buy-btn" onclick="game.buyEssence()" 
+                    ${!canExchange ? 'disabled' : ''}>
+                Обменять
+            </button>
+        `;
+        shopItems.appendChild(exchangeShopItem);
+        
+        // Покупка грядки
+        const plotShopItem = document.createElement('div');
+        plotShopItem.className = 'shop-item plot-shop-item';
+        const canBuyPlot = this.souls >= this.plotPrice && this.plots.length < this.maxPlots;
+        
+        plotShopItem.innerHTML = `
+            <div class="item-emoji">🟫</div>
+            <div class="item-name">Дополнительная грядка</div>
+            <div class="item-price">Цена: ${this.plotPrice} душ</div>
+            <div class="item-growth">Грядок: ${this.plots.length}/${this.maxPlots}</div>
+            <div class="item-description">Увеличьте площадь вашей фермы</div>
+            <button class="buy-btn" onclick="game.buyPlot()" 
+                    ${!canBuyPlot ? 'disabled' : ''}>
+                ${this.plots.length >= this.maxPlots ? 'Максимум' : 'Купить грядку'}
+            </button>
+        `;
+        shopItems.appendChild(plotShopItem);
+        
+        // Семена
+        Object.entries(this.seedTypes).forEach(([seedType, seedData]) => {
+            const shopItem = document.createElement('div');
+            shopItem.className = `shop-item ${seedData.buyPrice > 100 ? 'expensive' : 'cheap'}`;
+            
+            shopItem.innerHTML = `
+                <div class="item-emoji">${seedData.emoji}</div>
+                <div class="item-name">${seedData.name}</div>
+                <div class="item-price">Цена: ${seedData.buyPrice} эссенции</div>
+                <div class="item-sell-price">Продажа урожая: ${seedData.baseSellPrice} душ</div>
+                <div class="item-growth">Рост: ${seedData.time/1000}сек | Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
+                <div class="item-description">${seedData.description}</div>
+                <button class="buy-btn" onclick="game.buySeed('${seedType}')" 
+                        ${this.darkEssence < seedData.buyPrice ? 'disabled' : ''}>
+                    Купить семена
+                </button>
+            `;
+            
+            shopItems.appendChild(shopItem);
+        });
+    }
+    
+    // Клик по растению для ускорения роста
     clickCrop(plotIndex) {
         const plot = this.plots[plotIndex];
         if (plot.planted && plot.growth < 100) {
@@ -683,6 +644,7 @@ class DarkFarmGame {
         }
     }
     
+    // Рост растений со временем
     growCrops(deltaTime) {
         this.plots.forEach(plot => {
             if (plot.planted && plot.growth < 100) {
@@ -699,321 +661,10 @@ class DarkFarmGame {
         });
     }
     
-    initShop() {
-        const shopItems = document.getElementById('shopItems');
-        shopItems.innerHTML = '';
-        
-        // ОБМЕН ВАЛЮТЫ
-        const exchangeRate = 5;
-        const exchangeAmount = 1;
-        const exchangeTotalCost = exchangeAmount * this.exchangeCounter;
-        const exchangeTotalGain = exchangeAmount * exchangeRate * this.exchangeCounter;
-        const maxExchange = Math.floor(this.souls / exchangeAmount);
-        const canExchange = this.souls >= exchangeTotalCost;
-        
-        const exchangeShopItem = document.createElement('div');
-        exchangeShopItem.className = 'shop-item exchange-shop-item';
-        
-        exchangeShopItem.innerHTML = `
-            <div class="item-emoji">💱</div>
-            <div class="item-name">Обмен валюты</div>
-            <div class="item-price">${exchangeAmount} душ → ${exchangeAmount * exchangeRate} эссенции</div>
-            <div class="item-growth">Курс: 1 душа = ${exchangeRate} эссенции</div>
-            <div class="item-description">Обменяйте души на эссенцию для покупки семян</div>
-            
-            <div class="quantity-controls">
-                <div class="quantity-info">
-                    <span>Количество: </span>
-                    <span class="quantity-total">${exchangeTotalCost} душ → ${exchangeTotalGain} эссенции</span>
-                </div>
-                <div class="quantity-buttons">
-                    <button class="quantity-btn" onclick="game.decrementExchange()">-</button>
-                    <input type="number" 
-                           class="quantity-input" 
-                           id="quantity-exchange" 
-                           value="${this.exchangeCounter}" 
-                           min="1" 
-                           max="${maxExchange}" 
-                           onchange="game.updateExchangeFromInput()">
-                    <button class="quantity-btn" onclick="game.incrementExchange()">+</button>
-                    <button class="quantity-max-btn" onclick="game.setMaxExchange()">MAX</button>
-                </div>
-                <div class="quantity-hint" id="hint-exchange">
-                    Можно обменять: ${maxExchange} раз
-                </div>
-            </div>
-            
-            <button class="buy-btn" onclick="game.buyEssence()" 
-                    ${!canExchange ? 'disabled' : ''}>
-                Обменять ${this.exchangeCounter} раз за ${exchangeTotalCost} душ
-            </button>
-        `;
-        shopItems.appendChild(exchangeShopItem);
-        
-        // ПОКУПКА ГРЯДОК
-        const plotTotalCost = this.plotPrice * this.plotCounter;
-        const maxPlotsToBuy = Math.min(
-            Math.floor(this.souls / this.plotPrice),
-            this.maxPlots - this.plots.length
-        );
-        const canBuyPlot = this.souls >= plotTotalCost && this.plots.length + this.plotCounter <= this.maxPlots;
-        
-        const plotShopItem = document.createElement('div');
-        plotShopItem.className = 'shop-item plot-shop-item';
-        
-        plotShopItem.innerHTML = `
-            <div class="item-emoji">🟫</div>
-            <div class="item-name">Дополнительная грядка</div>
-            <div class="item-price">Цена: ${this.plotPrice} душ</div>
-            <div class="item-growth">Грядок: ${this.plots.length}/${this.maxPlots}</div>
-            <div class="item-description">Увеличьте площадь вашей фермы</div>
-            
-            <div class="quantity-controls">
-                <div class="quantity-info">
-                    <span>Количество: </span>
-                    <span class="quantity-total">${plotTotalCost} душ</span>
-                </div>
-                <div class="quantity-buttons">
-                    <button class="quantity-btn" onclick="game.decrementPlot()">-</button>
-                    <input type="number" 
-                           class="quantity-input" 
-                           id="quantity-plot" 
-                           value="${this.plotCounter}" 
-                           min="1" 
-                           max="${maxPlotsToBuy}" 
-                           onchange="game.updatePlotFromInput()">
-                    <button class="quantity-btn" onclick="game.incrementPlot()">+</button>
-                    <button class="quantity-max-btn" onclick="game.setMaxPlot()">MAX</button>
-                </div>
-                <div class="quantity-hint" id="hint-plot">
-                    Можно купить: ${maxPlotsToBuy} грядок
-                </div>
-            </div>
-            
-            <button class="buy-btn" onclick="game.buyPlot()" 
-                    ${!canBuyPlot ? 'disabled' : ''}>
-                ${this.plots.length + this.plotCounter >= this.maxPlots ? 'Максимум' : `Купить ${this.plotCounter} грядок за ${plotTotalCost} душ`}
-            </button>
-        `;
-        shopItems.appendChild(plotShopItem);
-        
-        // Семена
-        Object.entries(this.seedTypes).forEach(([seedType, seedData]) => {
-            const shopItem = document.createElement('div');
-            shopItem.className = `shop-item ${seedData.buyPrice > 100 ? 'expensive' : 'cheap'}`;
-            
-            const currentCount = this.shopCounters[seedType] || 1;
-            const totalPrice = seedData.buyPrice * currentCount;
-            const canAfford = this.darkEssence >= totalPrice;
-            const maxAffordable = Math.floor(this.darkEssence / seedData.buyPrice);
-            
-            shopItem.innerHTML = `
-                <div class="item-emoji">${seedData.emoji}</div>
-                <div class="item-name">${seedData.name}</div>
-                <div class="item-price">Цена: ${seedData.buyPrice} эссенции</div>
-                <div class="item-sell-price">Продажа урожая: ${seedData.baseSellPrice} душ</div>
-                <div class="item-growth">Рост: ${seedData.time/1000}сек | Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
-                <div class="item-description">${seedData.description}</div>
-                
-                <div class="quantity-controls">
-                    <div class="quantity-info">
-                        <span>Количество: </span>
-                        <span class="quantity-total">${totalPrice} эссенции</span>
-                    </div>
-                    <div class="quantity-buttons">
-                        <button class="quantity-btn" onclick="game.decrementQuantity('${seedType}')">-</button>
-                        <input type="number" 
-                               class="quantity-input" 
-                               id="quantity-${seedType}" 
-                               value="${currentCount}" 
-                               min="1" 
-                               max="${maxAffordable}" 
-                               onchange="game.updateQuantityFromInput('${seedType}')">
-                        <button class="quantity-btn" onclick="game.incrementQuantity('${seedType}')">+</button>
-                        <button class="quantity-max-btn" onclick="game.setMaxQuantity('${seedType}')">MAX</button>
-                    </div>
-                    <div class="quantity-hint" id="hint-${seedType}">
-                        Можно купить: ${maxAffordable} шт
-                    </div>
-                </div>
-                
-                <button class="buy-btn" onclick="game.buySeed('${seedType}')" 
-                        ${!canAfford ? 'disabled' : ''}>
-                    Купить ${currentCount} семян за ${totalPrice} эссенции
-                </button>
-            `;
-            
-            shopItems.appendChild(shopItem);
-        });
-    }
-    
-    // Методы для управления количеством обмена валюты
-    incrementExchange() {
-        const exchangeAmount = 1;
-        const maxAffordable = Math.floor(this.souls / exchangeAmount);
-        if (this.exchangeCounter < maxAffordable) {
-            this.exchangeCounter++;
-            this.updateShopExchange();
-        }
-    }
-    
-    decrementExchange() {
-        if (this.exchangeCounter > 1) {
-            this.exchangeCounter--;
-            this.updateShopExchange();
-        }
-    }
-    
-    setMaxExchange() {
-        const exchangeAmount = 1;
-        const maxAffordable = Math.floor(this.souls / exchangeAmount);
-        if (maxAffordable > 0) {
-            this.exchangeCounter = maxAffordable;
-            this.updateShopExchange();
-        }
-    }
-    
-    updateExchangeFromInput() {
-        const exchangeAmount = 1;
-        const input = document.getElementById('quantity-exchange');
-        const maxAffordable = Math.floor(this.souls / exchangeAmount);
-        let value = parseInt(input.value) || 1;
-        
-        if (value < 1) value = 1;
-        if (value > maxAffordable) value = maxAffordable;
-        
-        this.exchangeCounter = value;
-        this.updateShopExchange();
-    }
-    
-    updateShopExchange() {
-        const exchangeRate = 5;
-        const exchangeAmount = 1;
-        const totalCost = exchangeAmount * this.exchangeCounter;
-        const totalGain = exchangeAmount * exchangeRate * this.exchangeCounter;
-        const maxAffordable = Math.floor(this.souls / exchangeAmount);
-        const canAfford = this.souls >= totalCost;
-        
-        const input = document.getElementById('quantity-exchange');
-        if (input) {
-            input.value = this.exchangeCounter;
-            input.max = maxAffordable;
-        }
-        
-        const hint = document.getElementById('hint-exchange');
-        if (hint) {
-            hint.textContent = `Можно обменять: ${maxAffordable} раз`;
-            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
-        }
-        
-        const shopItem = document.querySelector('.exchange-shop-item');
-        if (shopItem) {
-            const totalElement = shopItem.querySelector('.quantity-total');
-            if (totalElement) {
-                totalElement.textContent = `${totalCost} душ → ${totalGain} эссенции`;
-            }
-            
-            const button = shopItem.querySelector('.buy-btn');
-            if (button) {
-                button.textContent = `Обменять ${this.exchangeCounter} раз за ${totalCost} душ`;
-                button.disabled = !canAfford;
-            }
-        }
-    }
-    
-    // Методы для управления количеством покупки грядок
-    incrementPlot() {
-        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
-        const maxByPlots = this.maxPlots - this.plots.length;
-        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
-        
-        if (this.plotCounter < maxAffordable) {
-            this.plotCounter++;
-            this.updateShopPlot();
-        }
-    }
-    
-    decrementPlot() {
-        if (this.plotCounter > 1) {
-            this.plotCounter--;
-            this.updateShopPlot();
-        }
-    }
-    
-    setMaxPlot() {
-        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
-        const maxByPlots = this.maxPlots - this.plots.length;
-        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
-        
-        if (maxAffordable > 0) {
-            this.plotCounter = maxAffordable;
-            this.updateShopPlot();
-        }
-    }
-    
-    updatePlotFromInput() {
-        const input = document.getElementById('quantity-plot');
-        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
-        const maxByPlots = this.maxPlots - this.plots.length;
-        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
-        let value = parseInt(input.value) || 1;
-        
-        if (value < 1) value = 1;
-        if (value > maxAffordable) value = maxAffordable;
-        
-        this.plotCounter = value;
-        this.updateShopPlot();
-    }
-    
-    updateShopPlot() {
-        const totalCost = this.plotPrice * this.plotCounter;
-        const maxAffordableBySouls = Math.floor(this.souls / this.plotPrice);
-        const maxByPlots = this.maxPlots - this.plots.length;
-        const maxAffordable = Math.min(maxAffordableBySouls, maxByPlots);
-        const canAfford = this.souls >= totalCost && this.plotCounter <= maxByPlots;
-        
-        const input = document.getElementById('quantity-plot');
-        if (input) {
-            input.value = this.plotCounter;
-            input.max = maxAffordable;
-        }
-        
-        const hint = document.getElementById('hint-plot');
-        if (hint) {
-            hint.textContent = `Можно купить: ${maxAffordable} грядок`;
-            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
-        }
-        
-        const shopItem = document.querySelector('.plot-shop-item');
-        if (shopItem) {
-            const totalElement = shopItem.querySelector('.quantity-total');
-            if (totalElement) {
-                totalElement.textContent = `${totalCost} душ`;
-            }
-            
-            const button = shopItem.querySelector('.buy-btn');
-            if (button) {
-                const isMax = this.plots.length + this.plotCounter >= this.maxPlots;
-                button.textContent = isMax ? 
-                    'Максимум' : 
-                    `Купить ${this.plotCounter} грядок за ${totalCost} душ`;
-                button.disabled = !canAfford || isMax;
-            }
-        }
-    }
-    
+    // Обновление отображения
     updateDisplay() {
         document.getElementById('souls').textContent = `Души: ${this.souls}`;
         document.getElementById('darkEssence').textContent = `Тёмная эссенция: ${this.darkEssence}`;
-        
-        if (this.shopOpen) {
-            this.updateShopExchange();
-            this.updateShopPlot();
-            
-            Object.keys(this.seedTypes).forEach(seedType => {
-                this.updateShopItem(seedType);
-            });
-        }
         
         const plotElements = document.querySelectorAll('.plot');
         this.plots.forEach((plot, index) => {
@@ -1027,21 +678,56 @@ class DarkFarmGame {
                     plotElement.textContent = seedData.emoji;
                     plotElement.style.background = '#4a2d5a';
                     plotElement.className = 'plot ready';
+                    plotElement.title = `${seedData.name} - Готово к сбору! Кликни чтобы собрать (шанс семян: ${Math.round(seedData.dropChance * 100)}%)`;
                 } else {
                     const growthStage = Math.floor(plot.growth / 25);
                     const stages = ['🌱', '🪴', '🌿', seedData.emoji];
                     plotElement.textContent = stages[growthStage] || stages[0];
                     plotElement.style.background = '#2d5a2d';
                     plotElement.className = 'plot growing';
+                    
+                    const timeLeft = plot.remainingTime / 1000;
+                    const clicksLeft = this.seedTypes[plot.type].clicks - plot.clicks;
+                    plotElement.title = `${seedData.name} - ${Math.ceil(timeLeft)}сек осталось | Кликов: ${plot.clicks} | Кликай чтобы ускорить рост на 3 секунды!`;
                 }
+                
+                let progressContainer = plotElement.querySelector('.progress-container');
+                if (!progressContainer) {
+                    progressContainer = document.createElement('div');
+                    progressContainer.className = 'progress-container';
+                    plotElement.appendChild(progressContainer);
+                }
+                
+                const timeLeft = Math.ceil(plot.remainingTime / 1000);
+                const clickEffect = plot.clicks > 0 ? ` | -${plot.clicks * 3}сек от кликов` : '';
+                
+                progressContainer.innerHTML = `
+                    <div class="growth-info">
+                        ⏰ ${timeLeft}сек${clickEffect}
+                    </div>
+                    <div class="growth-progress">
+                        <div class="growth-progress-fill" style="width: ${plot.growth}%"></div>
+                    </div>
+                    <div class="click-info">
+                        👆 Кликай! Каждый клик ускоряет рост на 3 секунды
+                    </div>
+                `;
+                
             } else {
                 plotElement.textContent = '🟫';
                 plotElement.style.background = '#0f3460';
                 plotElement.className = 'plot';
+                plotElement.title = 'Пустой участок - кликни чтобы посадить семена';
+                
+                const progressContainer = plotElement.querySelector('.progress-container');
+                if (progressContainer) {
+                    progressContainer.remove();
+                }
             }
         });
     }
     
+    // Переключение видимости магазина
     toggleShop() {
         this.shopOpen = !this.shopOpen;
         const shop = document.getElementById('shop');
@@ -1056,6 +742,7 @@ class DarkFarmGame {
         }
     }
     
+    // Переключение видимости инвентаря
     toggleInventory() {
         this.inventoryOpen = !this.inventoryOpen;
         const inventory = document.getElementById('inventory');
@@ -1066,6 +753,7 @@ class DarkFarmGame {
         }
     }
     
+    // Игровой цикл
     startGameLoop() {
         setInterval(() => {
             const now = Date.now();
@@ -1073,332 +761,17 @@ class DarkFarmGame {
             this.lastUpdate = now;
             
             this.growCrops(deltaTime);
-            this.updateCauldronProgress();
             this.updateDisplay();
-            
-            // Обновляем постройки только если нужно (для оптимизации)
-            if (this.alchemyCauldron.working) {
-                this.renderBuildings();
-            }
         }, 100);
     }
     
+    // Показ сообщения о выпадении семян
     showDropMessage(emoji, name, count) {
-        this.showMessage(emoji, `+${count} семян ${name}!`, 'success');
-    }
-    
-    // Методы для управления количеством в магазине
-    incrementQuantity(seedType) {
-        const maxAffordable = Math.floor(this.darkEssence / this.seedTypes[seedType].buyPrice);
-        const currentCount = this.shopCounters[seedType] || 1;
-        
-        if (currentCount < maxAffordable) {
-            this.shopCounters[seedType] = currentCount + 1;
-            this.updateShopItem(seedType);
-        }
-    }
-    
-    decrementQuantity(seedType) {
-        const currentCount = this.shopCounters[seedType] || 1;
-        if (currentCount > 1) {
-            this.shopCounters[seedType] = currentCount - 1;
-            this.updateShopItem(seedType);
-        }
-    }
-    
-    setMaxQuantity(seedType) {
-        const maxAffordable = Math.floor(this.darkEssence / this.seedTypes[seedType].buyPrice);
-        if (maxAffordable > 0) {
-            this.shopCounters[seedType] = maxAffordable;
-            this.updateShopItem(seedType);
-        }
-    }
-    
-    updateQuantityFromInput(seedType) {
-        const input = document.getElementById(`quantity-${seedType}`);
-        const maxAffordable = Math.floor(this.darkEssence / this.seedTypes[seedType].buyPrice);
-        let value = parseInt(input.value) || 1;
-        
-        if (value < 1) value = 1;
-        if (value > maxAffordable) value = maxAffordable;
-        
-        this.shopCounters[seedType] = value;
-        this.updateShopItem(seedType);
-    }
-
-    incrementSell(seedType) {
-        const max = this.harvestInventory[seedType] || 0;
-        const current = this.sellCounters[seedType] || 1;
-        if (current < max) {
-            this.sellCounters[seedType] = current + 1;
-            this.updateInventoryDisplay();
-        }
-    }
-
-    decrementSell(seedType) {
-        const current = this.sellCounters[seedType] || 1;
-        if (current > 1) {
-            this.sellCounters[seedType] = current - 1;
-            this.updateInventoryDisplay();
-        }
-    }
-
-    setMaxSell(seedType) {
-        const max = this.harvestInventory[seedType] || 0;
-        if (max > 0) {
-            this.sellCounters[seedType] = max;
-            this.updateInventoryDisplay();
-        }
-    }
-
-    updateSellFromInput(seedType) {
-        const input = document.getElementById(`sell-quantity-${seedType}`);
-        const max = this.harvestInventory[seedType] || 0;
-        let value = parseInt(input.value) || 1;
-        if (value < 1) value = 1;
-        if (value > max) value = max;
-        this.sellCounters[seedType] = value;
-        this.updateInventoryDisplay();
-    }
-
-    updateShopItem(seedType) {
-        const seedData = this.seedTypes[seedType];
-        const currentCount = this.shopCounters[seedType] || 1;
-        const totalPrice = seedData.buyPrice * currentCount;
-        const maxAffordable = Math.floor(this.darkEssence / seedData.buyPrice);
-        const canAfford = this.darkEssence >= totalPrice;
-        
-        const input = document.getElementById(`quantity-${seedType}`);
-        if (input) {
-            input.value = currentCount;
-            input.max = maxAffordable;
-        }
-        
-        const hint = document.getElementById(`hint-${seedType}`);
-        if (hint) {
-            hint.textContent = `Можно купить: ${maxAffordable} шт`;
-            hint.style.color = maxAffordable > 0 ? '#4CAF50' : '#f44336';
-        }
-        
-        const shopItem = document.querySelector(`#quantity-${seedType}`)?.closest('.shop-item');
-        if (shopItem) {
-            const totalElement = shopItem.querySelector('.quantity-total');
-            if (totalElement) {
-                totalElement.textContent = `${totalPrice} эссенции`;
-            }
-            
-            const button = shopItem.querySelector('.buy-btn');
-            if (button) {
-                button.textContent = `Купить ${currentCount} семян за ${totalPrice} эссенции`;
-                button.disabled = !canAfford;
-            }
-        }
-    }
-    
-    updateInventoryDisplay() {
-        const inventoryItems = document.getElementById('inventoryItems');
-        inventoryItems.innerHTML = '';
-        
-        // Секция семян
-        let hasSeeds = false;
-        const seedsSection = document.createElement('div');
-        seedsSection.className = 'inventory-section';
-        seedsSection.innerHTML = '<h4>📦 Семена</h4>';
-        
-        Object.entries(this.seedsInventory).forEach(([seedType, count]) => {
-            if (count > 0) {
-                hasSeeds = true;
-                const seedData = this.seedTypes[seedType];
-                const seedItem = document.createElement('div');
-                seedItem.className = 'inventory-item seed-item';
-                
-                seedItem.innerHTML = `
-                    <div class="item-emoji">${seedData.emoji}</div>
-                    <div class="item-name">${seedData.name}</div>
-                    <div class="item-count">Семян: ${count}</div>
-                    <div class="item-info">Посадите чтобы вырастить</div>
-                `;
-                
-                seedsSection.appendChild(seedItem);
-            }
-        });
-        
-        if (hasSeeds) {
-            inventoryItems.appendChild(seedsSection);
-        }
-        
-        // Секция урожая
-        let hasHarvest = false;
-        const harvestSection = document.createElement('div');
-        harvestSection.className = 'inventory-section';
-        harvestSection.innerHTML = '<h4>🌿 Урожай (для продажи или котла)</h4>';
-        
-        Object.entries(this.harvestInventory).forEach(([seedType, count]) => {
-            if (count > 0) {
-                hasHarvest = true;
-                const seedData = this.seedTypes[seedType];
-                const sellCount = this.sellCounters[seedType] || 1;
-                const totalPrice = seedData.baseSellPrice * sellCount;
-                const canSell = count >= sellCount;
-                
-                const harvestItem = document.createElement('div');
-                harvestItem.className = 'inventory-item harvest-item';
-                
-                harvestItem.innerHTML = `
-                    <div class="item-emoji">${seedData.emoji}</div>
-                    <div class="item-name">${seedData.name}</div>
-                    <div class="item-count">Урожая: ${count}</div>
-                    <div class="item-sell-price">Цена за шт: ${seedData.baseSellPrice} душ</div>
-                    
-                    <div class="quantity-controls">
-                        <div class="quantity-info">
-                            <span>Продать: </span>
-                            <span class="quantity-total">${totalPrice} душ</span>
-                        </div>
-                        <div class="quantity-buttons">
-                            <button class="quantity-btn" onclick="game.decrementSell('${seedType}')">-</button>
-                            <input type="number" 
-                                   class="quantity-input" 
-                                   id="sell-quantity-${seedType}" 
-                                   value="${sellCount}" 
-                                   min="1" 
-                                   max="${count}" 
-                                   onchange="game.updateSellFromInput('${seedType}')">
-                            <button class="quantity-btn" onclick="game.incrementSell('${seedType}')">+</button>
-                            <button class="quantity-max-btn" onclick="game.setMaxSell('${seedType}')">MAX</button>
-                        </div>
-                    </div>
-                    
-                    <button class="sell-btn" onclick="game.sellHarvest('${seedType}')" 
-                            ${!canSell ? 'disabled' : ''}>
-                        Продать ${sellCount} шт за ${totalPrice} душ
-                    </button>
-                `;
-                
-                harvestSection.appendChild(harvestItem);
-            }
-        });
-        
-        if (hasHarvest) {
-            inventoryItems.appendChild(harvestSection);
-        }
-        
-        // Секция эликсиров
-        let hasElixirs = false;
-        const elixirsSection = document.createElement('div');
-        elixirsSection.className = 'inventory-section';
-        elixirsSection.innerHTML = '<h4>🧪 Эликсиры (из котла)</h4>';
-        
-        Object.entries(this.elixirInventory).forEach(([elixirType, count]) => {
-            if (count > 0) {
-                hasElixirs = true;
-                const elixirData = this.elixirRecipes[elixirType];
-                const sellCount = this.sellCounters[elixirType] || 1;
-                const totalPrice = elixirData.baseSellPrice * sellCount;
-                const canSell = count >= sellCount;
-                
-                const elixirItem = document.createElement('div');
-                elixirItem.className = 'inventory-item';
-                elixirItem.style.background = 'linear-gradient(135deg, #5a2d5a, #7c4a7c)';
-                
-                elixirItem.innerHTML = `
-                    <div class="item-emoji">${elixirData.emoji}</div>
-                    <div class="item-name">${elixirData.name}</div>
-                    <div class="item-count">Эликсиров: ${count}</div>
-                    <div class="item-sell-price">Цена за шт: ${elixirData.baseSellPrice} душ</div>
-                    <div class="item-description">${elixirData.description}</div>
-                    
-                    <div class="quantity-controls">
-                        <div class="quantity-info">
-                            <span>Продать: </span>
-                            <span class="quantity-total">${totalPrice} душ</span>
-                        </div>
-                        <div class="quantity-buttons">
-                            <button class="quantity-btn" onclick="game.decrementSell('${elixirType}')">-</button>
-                            <input type="number" 
-                                   class="quantity-input" 
-                                   id="sell-quantity-${elixirType}" 
-                                   value="${sellCount}" 
-                                   min="1" 
-                                   max="${count}" 
-                                   onchange="game.updateSellFromInput('${elixirType}')">
-                            <button class="quantity-btn" onclick="game.incrementSell('${elixirType}')">+</button>
-                            <button class="quantity-max-btn" onclick="game.setMaxSell('${elixirType}')">MAX</button>
-                        </div>
-                    </div>
-                    
-                    <button class="sell-btn" onclick="game.sellElixir('${elixirType}')" 
-                            ${!canSell ? 'disabled' : ''}>
-                        Продать ${sellCount} шт за ${totalPrice} душ
-                    </button>
-                `;
-                
-                elixirsSection.appendChild(elixirItem);
-            }
-        });
-        
-        if (hasElixirs) {
-            inventoryItems.appendChild(elixirsSection);
-        }
-        
-        if (!hasSeeds && !hasHarvest && !hasElixirs) {
-            inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
-        }
-    }
-
-    sellHarvest(seedType) {
-        const sellCount = this.sellCounters[seedType] || 1;
-        const seedData = this.seedTypes[seedType];
-        
-        if (this.harvestInventory[seedType] >= sellCount) {
-            const totalPrice = seedData.baseSellPrice * sellCount;
-            this.souls += totalPrice;
-            this.harvestInventory[seedType] -= sellCount;
-            
-            this.sellCounters[seedType] = 1;
-            
-            this.updateDisplay();
-            this.updateInventoryDisplay();
-            this.saveToLocalStorage();
-            
-            this.showMessage('💰', `Продано ${sellCount} урожая ${seedData.name} за ${totalPrice} душ!`, 'success');
-        }
-    }
-
-    sellElixir(elixirType) {
-        const sellCount = this.sellCounters[elixirType] || 1;
-        const elixirData = this.elixirRecipes[elixirType];
-        
-        if (this.elixirInventory[elixirType] >= sellCount) {
-            const totalPrice = elixirData.baseSellPrice * sellCount;
-            this.souls += totalPrice;
-            this.elixirInventory[elixirType] -= sellCount;
-            
-            this.sellCounters[elixirType] = 1;
-            
-            this.updateDisplay();
-            this.updateInventoryDisplay();
-            this.saveToLocalStorage();
-            
-            this.showMessage('💰', `Продано ${sellCount} эликсира ${elixirData.name} за ${totalPrice} душ!`, 'success');
-        }
-    }
-
-    showMessage(emoji, text, type = 'info') {
         const message = document.createElement('div');
-        message.className = 'purchase-message';
-        
-        if (type === 'success') {
-            message.style.background = '#4CAF50';
-        } else if (type === 'error') {
-            message.style.background = '#f44336';
-        } else {
-            message.style.background = '#2196F3';
-        }
-        
+        message.className = 'drop-message';
         message.innerHTML = `
-            <span class="purchase-emoji">${emoji}</span>
-            <span class="purchase-text">${text}</span>
+            <span class="drop-emoji">${emoji}</span>
+            <span class="drop-text">+${count} семян ${name}!</span>
         `;
         
         document.body.appendChild(message);
@@ -1416,56 +789,78 @@ class DarkFarmGame {
             }, 500);
         }, 3000);
     }
-
-    saveToLocalStorage() {
-        const gameData = {
-            souls: this.souls,
-            darkEssence: this.darkEssence,
-            seedsInventory: this.seedsInventory,
-            harvestInventory: this.harvestInventory,
-            elixirInventory: this.elixirInventory,
-            plots: this.plots,
-            alchemyCauldron: this.alchemyCauldron,
-            lastUpdate: Date.now()
-        };
-        localStorage.setItem('darkFarm_backup', JSON.stringify(gameData));
-    }
     
-    loadFromLocalStorage() {
-        const saved = localStorage.getItem('darkFarm_backup');
-        if (saved) {
-            try {
-                const gameData = JSON.parse(saved);
-                this.souls = gameData.souls || 0;
-                this.darkEssence = gameData.darkEssence || 100;
-                this.seedsInventory = gameData.seedsInventory || {};
-                this.harvestInventory = gameData.harvestInventory || {};
-                this.elixirInventory = gameData.elixirInventory || {};
-                this.plots = gameData.plots || [];
-                this.alchemyCauldron = gameData.alchemyCauldron || {
-                    owned: false,
-                    working: false,
-                    progress: 0,
-                    currentRecipe: null,
-                    startTime: null,
-                    totalTime: 0,
-                    inputQuantity: 0,
-                    outputQuantity: 0,
-                    endTime: null
-                };
+    // Обновление отображения инвентаря
+    updateInventoryDisplay() {
+        const inventoryItems = document.getElementById('inventoryItems');
+        inventoryItems.innerHTML = '';
+        
+        // Показываем семена
+        let hasSeeds = false;
+        const seedsSection = document.createElement('div');
+        seedsSection.className = 'inventory-section';
+        seedsSection.innerHTML = '<h4>📦 Семена (не для продажи)</h4>';
+        
+        Object.entries(this.seedsInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasSeeds = true;
+                const seedData = this.seedTypes[seedType];
+                const seedItem = document.createElement('div');
+                seedItem.className = 'inventory-item seed-item';
                 
-                this.lastUpdate = gameData.lastUpdate || Date.now();
-                return true;
-            } catch (error) {
-                console.error('Ошибка загрузки из localStorage:', error);
+                seedItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Семян: ${count}</div>
+                    <div class="item-drop-chance">Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
+                    <div class="item-info">Посадите чтобы вырастить</div>
+                `;
+                
+                seedsSection.appendChild(seedItem);
             }
+        });
+        
+        if (hasSeeds) {
+            inventoryItems.appendChild(seedsSection);
         }
-        return false;
+        
+        // Показываем урожай
+        let hasHarvest = false;
+        const harvestSection = document.createElement('div');
+        harvestSection.className = 'inventory-section';
+        harvestSection.innerHTML = '<h4>💰 Урожай (для продажи)</h4>';
+        
+        Object.entries(this.harvestInventory).forEach(([seedType, count]) => {
+            if (count > 0) {
+                hasHarvest = true;
+                const seedData = this.seedTypes[seedType];
+                const harvestItem = document.createElement('div');
+                harvestItem.className = 'inventory-item harvest-item';
+                
+                harvestItem.innerHTML = `
+                    <div class="item-emoji">${seedData.emoji}</div>
+                    <div class="item-name">${seedData.name}</div>
+                    <div class="item-count">Урожая: ${count}</div>
+                    <div class="item-sell-price">Цена: ${seedData.baseSellPrice} душ</div>
+                    <button class="sell-btn" onclick="game.sellHarvest('${seedType}')">
+                        Продать за ${seedData.baseSellPrice} душ
+                    </button>
+                `;
+                
+                harvestSection.appendChild(harvestItem);
+            }
+        });
+        
+        if (hasHarvest) {
+            inventoryItems.appendChild(harvestSection);
+        }
+        
+        if (!hasSeeds && !hasHarvest) {
+            inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
+        }
     }
 }
 
-// Инициализация игры
-// Инициализация игры
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
@@ -1477,30 +872,27 @@ window.onload = function() {
     document.getElementById('inventoryToggle').addEventListener('click', () => {
         game.toggleInventory();
     });
+};
 
-    // Добавляем обработчик для кнопки аккаунта
-    document.getElementById('authButton').addEventListener('click', () => {
-        // Здесь можно добавить функциональность для аккаунта
-        alert('Функция аккаунта будет добавлена позже');
-    });
-
-    // Обработчики для модального окна авторизации
-    const authModal = document.getElementById('authModal');
+// Обработчики для модального окна (добавьте в самый конец файла, после класса)
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('authModal');
     const closeBtn = document.querySelector('.close');
     
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            authModal.classList.add('hidden');
-        });
-    }
-    
-    window.addEventListener('click', (event) => {
-        if (event.target === authModal) {
-            authModal.classList.add('hidden');
+    // Закрытие модального окна при клике вне его
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.classList.add('hidden');
         }
     });
-}; // <- ТОЛЬКО ОДНА закрывающая скобка и точка с запятой
-
+    
+    // Закрытие по ESC
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            modal.classList.add('hidden');
+        }
+    });
+});
 
 
 
