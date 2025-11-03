@@ -2128,3 +2128,208 @@ h1, h3 {
     transform: none;
     box-shadow: none;
 }
+
+/* ---------------------------
+   Alchemical Cauldron (котел)
+   Поместить в конец style.css
+   --------------------------- */
+
+/* Область построек — находится под грядками */
+.buildings-area {
+  background: #111322; /* чуть темнее, чем основная панель */
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 18px;
+  border: 2px solid rgba(57, 72, 103, 0.8);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Внутренний контейнер построек */
+.buildings-container {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* Блок котла */
+.cauldron-building {
+  width: 320px;
+  min-height: 340px;
+  padding: 22px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2d3948, #4a5a7a);
+  border: 2px solid #5d3891;
+  color: #c9c9c9;
+  text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Внешний эффект при hover (только когда доступен) */
+.cauldron-building:hover:not(.locked) {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+}
+
+/* Неактивный / заблокированный котел (пока не куплен) */
+.cauldron-building.locked {
+  background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+  border-color: #666;
+  color: #8a8a8a;
+  filter: grayscale(0.85);
+  opacity: 0.95;
+  cursor: default;
+}
+
+/* Активный — процесс варки (working) */
+.cauldron-building.working {
+  background: linear-gradient(135deg, #5a2d5a, #7c4a7c);
+  border-color: #e94560;
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+/* Готовый результат */
+.cauldron-building.ready {
+  background: linear-gradient(135deg, #2d5a2d, #4a7c4a);
+  border-color: #4CAF50;
+  animation: harvest-glow 1.5s ease-in-out infinite;
+}
+
+/* Эмоджи/иконка котла */
+.cauldron-emoji {
+  font-size: 4rem;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+}
+
+/* Заголовок котла */
+.cauldron-name {
+  color: #e94560;
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 1.25rem;
+}
+
+/* Цена и описание */
+.cauldron-price,
+.cauldron-description,
+.cauldron-info {
+  color: #c9c9c9;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  margin: 6px 0;
+}
+
+/* Прогресс-контейнер котла */
+.cauldron-progress-bar {
+  height: 12px;
+  width: 100%;
+  background: rgba(0,0,0,0.28);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(57,72,103,0.6);
+}
+
+.cauldron-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #9C27B0, #E91E63);
+  transition: width 0.4s ease;
+}
+
+/* Интерфейс кнопок котла */
+.cauldron-controls {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Универсальные кнопки котла */
+.cauldron-buy-btn,
+.cauldron-start-btn,
+.cauldron-collect-btn {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Разные цвета кнопок */
+.cauldron-buy-btn { background: linear-gradient(135deg,#5d3891,#6d4891); }
+.cauldron-start-btn { background: linear-gradient(135deg,#e94560,#ff6b95); }
+.cauldron-collect-btn { background: linear-gradient(135deg,#4CAF50,#66BB6A); }
+
+/* Отключённые состояния */
+.cauldron-buy-btn:disabled,
+.cauldron-start-btn:disabled,
+.cauldron-collect-btn:disabled {
+  background: #2a2a2a;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Пузырьки и мелкие анимации (визуальная фишка) */
+@keyframes cauldron-bubble {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(-28px) scale(1.15); opacity: 0; }
+}
+.cauldron-bubble {
+  position: absolute;
+  left: 20%;
+  bottom: 18%;
+  font-size: 1.1rem;
+  animation: cauldron-bubble 2.2s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* Визуально помеченные грядки, подключённые к котлу */
+.plot.connected-to-cauldron {
+  border: 2px solid rgba(156,39,176,0.95) !important;
+  box-shadow: 0 0 12px rgba(156,39,176,0.35) !important;
+}
+
+/* Режим выбора грядок для отправки в котёл */
+.plot.cauldron-mode {
+  border: 2px dashed #FF9800 !important;
+  cursor: pointer !important;
+}
+.plot.cauldron-mode:hover {
+  border: 2px solid #FF9800 !important;
+  background: rgba(255,152,0,0.06) !important;
+}
+
+/* Эффект "засасывания" при отправке в котёл */
+@keyframes cauldron-suction {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); box-shadow: 0 0 20px rgba(156,39,176,0.75); }
+  100% { transform: scale(1); }
+}
+.plot.cauldron-active {
+  animation: cauldron-suction 1.6s ease-in-out;
+}
+
+/* Мелкие responsive-правки */
+@media (max-width: 768px) {
+  .cauldron-building { width: 100%; max-width: 420px; min-height: 320px; }
+  .cauldron-emoji { font-size: 3rem; }
+}
+@media (max-width: 480px) {
+  .buildings-container { gap: 12px; }
+  .cauldron-emoji { font-size: 2.6rem; }
+}
