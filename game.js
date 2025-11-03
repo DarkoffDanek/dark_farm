@@ -1706,27 +1706,52 @@ class DarkFarmGame {
     }
     
 // ---------------------------
-// Выбор ингредиентов и варка
-    // ---------------------------
+    // Выбор ингредиентов и варка
+        // ---------------------------
     openIngredientSelection() {
-        if (!this.cauldron.unlocked || this.cauldron.brewing) return;
+        if (!this.cauldron.unlocked) {
+            this.showMessage('💀', 'Сначала купи котёл за 500 душ.');
+            return;
+        }
+        if (this.cauldron.brewing) {
+            this.showMessage('🔥', 'Котёл уже варит!');
+            return;
+        }
     
+        // Удаляем возможное старое окно
+        const oldModal = document.querySelector('.cauldron-modal');
+        if (oldModal) oldModal.remove();
+    
+        // Создаём модальное окно безопасно (без innerHTML краша)
         const modal = document.createElement('div');
         modal.className = 'modal cauldron-modal';
-        modal.innerHTML = `
-            <div class="modal-content cauldron-select">
-                <h3>🧪 Выберите ингредиенты для варки</h3>
-                <div id="ingredientList"></div>
-                <button id="startBrewConfirm" class="cauldron-start-btn">Начать варку</button>
-                <button id="cancelBrew" class="cauldron-buy-btn">Отмена</button>
-            </div>
-        `;
+    
+        const content = document.createElement('div');
+        content.className = 'modal-content cauldron-select';
+        const title = document.createElement('h3');
+        title.textContent = '🧪 Выберите ингредиенты для варки';
+        content.appendChild(title);
+    
+        const list = document.createElement('div');
+        list.id = 'ingredientList';
+        content.appendChild(list);
+    
+        const startBtn = document.createElement('button');
+        startBtn.id = 'startBrewConfirm';
+        startBtn.className = 'cauldron-start-btn';
+        startBtn.textContent = 'Начать варку';
+        content.appendChild(startBtn);
+    
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancelBrew';
+        cancelBtn.className = 'cauldron-buy-btn';
+        cancelBtn.textContent = 'Отмена';
+        content.appendChild(cancelBtn);
+    
+        modal.appendChild(content);
         document.body.appendChild(modal);
     
-        const list = modal.querySelector('#ingredientList');
-        list.innerHTML = '';
-    
-        // Отображаем только доступные цветы
+        // Загружаем ингредиенты из инвентаря
         Object.entries(this.harvestInventory).forEach(([type, count]) => {
             const seed = this.seedTypes[type];
             if (!seed || count <= 0) return;
@@ -1744,7 +1769,7 @@ class DarkFarmGame {
             list.appendChild(item);
         });
     
-        // Локальные обработчики
+        // Управление +/–
         list.addEventListener('click', e => {
             if (e.target.classList.contains('inc') || e.target.classList.contains('dec')) {
                 const type = e.target.dataset.type;
@@ -1759,8 +1784,8 @@ class DarkFarmGame {
             }
         });
     
-        // Начать варку
-        modal.querySelector('#startBrewConfirm').addEventListener('click', () => {
+        // Кнопка "Начать варку"
+        startBtn.addEventListener('click', () => {
             const selected = {};
             document.querySelectorAll('#ingredientList input').forEach(input => {
                 const val = parseInt(input.value);
@@ -1779,8 +1804,10 @@ class DarkFarmGame {
             modal.remove();
         });
     
-        modal.querySelector('#cancelBrew').addEventListener('click', () => modal.remove());
+        // Кнопка "Отмена"
+        cancelBtn.addEventListener('click', () => modal.remove());
     }
+
     
     // Запуск варки
     startBrewing(selectedIngredients) {
@@ -2020,6 +2047,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
