@@ -42,7 +42,7 @@ class DarkFarmGame {
                 name: 'Теневая ягода',
                 emoji: '🍇',
                 time: 150000,
-                clicks: 7,
+                clicks: 50,
                 buyPrice: 10,
                 baseSellPrice: 3,
                 description: 'Быстрорастущая, но дешёвая',
@@ -52,7 +52,7 @@ class DarkFarmGame {
                 name: 'Призрачная тыква',
                 emoji: '🎃',
                 time: 1050000,
-                clicks: 40,
+                clicks: 350,
                 buyPrice: 21,
                 baseSellPrice: 8,
                 description: 'Средняя скорость, хорошая цена',
@@ -62,7 +62,7 @@ class DarkFarmGame {
                 name: 'Гриб пустоты',
                 emoji: '🍄',
                 time: 1950000,
-                clicks: 300,
+                clicks: 650,
                 buyPrice: 29,
                 baseSellPrice: 14,
                 description: 'Растёт медленно, но дорого стоит',
@@ -82,7 +82,7 @@ class DarkFarmGame {
                 name: 'Кровавая роза',
                 emoji: '🌹',
                 time: 2850000,
-                clicks: 1800,
+                clicks: 950,
                 buyPrice: 40,
                 baseSellPrice: 26,
                 description: 'Очень редкая и дорогая',
@@ -92,7 +92,7 @@ class DarkFarmGame {
                 name: 'Лунная лилия',
                 emoji: '🌸',
                 time: 3750000,
-                clicks: 3600,
+                clicks: 1250,
                 buyPrice: 54,
                 baseSellPrice: 47,
                 description: 'Цветёт только в лунном свете',
@@ -102,7 +102,7 @@ class DarkFarmGame {
                 name: 'Фантомная орхидея',
                 emoji: '💮',
                 time: 5550000,
-                clicks: 7200,
+                clicks: 1850,
                 buyPrice: 103,
                 baseSellPrice: 150,
                 description: 'Легендарное растение из иного мира',
@@ -2192,6 +2192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
