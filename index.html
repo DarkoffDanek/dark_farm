@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -22,9 +23,7 @@
 
             <div class="controls">
                 <button id="shopToggle" class="toggle-btn">🏪 Магазин Семян</button>
-                <button id="buildingsToggle" class="toggle-btn">🏭 Постройки</button>
                 <button id="inventoryToggle" class="toggle-btn">🎒 Инвентарь</button>
-                <button id="cauldronModeToggle" class="toggle-btn cauldron-mode-btn">🔗 Подключить грядки</button>
                 <button id="authButton" class="toggle-btn auth-btn">👤 Аккаунт</button>
             </div>
 
@@ -33,13 +32,6 @@
                 <h3>🏪 Тёмный рынок семян</h3>
                 <div class="shop-scroll-container">
                     <div class="shop-items" id="shopItems"></div>
-                </div>
-            </div>
-            <!-- Добавляем после существующих магазина и инвентаря -->
-            <div id="buildings" class="buildings-shop hidden">
-                <h3>🏭 Магазин построек</h3>
-                <div class="buildings-scroll-container">
-                    <div class="buildings-items" id="buildingsItems"></div>
                 </div>
             </div>
 
@@ -51,8 +43,15 @@
                 </div>
             </div>
 
+            <!-- Ферма -->
             <div class="farm-container">
                 <div class="farm-area" id="farmArea"></div>
+            </div>
+
+            <!-- Постройки -->
+            <div class="buildings-area">
+                <h3>🏭 Алхимическая лаборатория</h3>
+                <div class="buildings-container" id="buildingsContainer"></div>
             </div>
 
             <div class="instructions">
@@ -60,7 +59,7 @@
                 <p>• Купи семена в магазине → посади на участке</p>
                 <p>• Кликай на растения или жди пока вырастут</p>
                 <p>• Собери урожай → продай в инвентаре за души</p>
-                <p>• Чем дольше растёт семя - тем дороже урожай!</p>
+                <p>• Используй алхимический котёл для создания эликсиров</p>
             </div>
         </div>
     </div>
@@ -93,6 +92,3 @@
     <script src="game.js"></script>
 </body>
 </html>
-
-
-
