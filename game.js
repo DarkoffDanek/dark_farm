@@ -753,100 +753,38 @@ class DarkFarmGame {
     }
     
     // Обновите метод updateInventoryDisplay для добавления счетчиков продажи
-    updateInventoryDisplay() {
-        const inventoryItems = document.getElementById('inventoryItems');
-        inventoryItems.innerHTML = '';
-        
-        let hasSeeds = false;
-        const seedsSection = document.createElement('div');
-        seedsSection.className = 'inventory-section';
-        seedsSection.innerHTML = '<h4>📦 Семена (не для продажи)</h4>';
-        
-        Object.entries(this.seedsInventory).forEach(([seedType, count]) => {
-            if (count > 0) {
-                hasSeeds = true;
-                const seedData = this.seedTypes[seedType];
-                const seedItem = document.createElement('div');
-                seedItem.className = 'inventory-item seed-item';
-                
-                seedItem.innerHTML = `
-                    <div class="item-emoji">${seedData.emoji}</div>
-                    <div class="item-name">${seedData.name}</div>
-                    <div class="item-count">Семян: ${count}</div>
-                    <div class="item-drop-chance">Шанс семян: ${Math.round(seedData.dropChance * 100)}%</div>
-                    <div class="item-info">Посадите чтобы вырастить</div>
-                `;
-                
-                seedsSection.appendChild(seedItem);
-            }
+    updateInventoryDisplay(includePotions = false) {
+        const inventoryItems = document.getElementById("inventoryItems");
+        if (!inventoryItems) return;
+        inventoryItems.innerHTML = "";
+    
+        Object.entries(this.harvestInventory).forEach(([item, count]) => {
+            if (count <= 0) return;
+    
+            // Проверяем: это растение или зелье
+            const seedData = this.seedTypes[item];
+            const isPotion = this.potionPrices && this.potionPrices[item];
+    
+            if (!seedData && !isPotion) return; // пропускаем неизвестное
+    
+            const emoji = seedData?.emoji || '🧪';
+            const name = seedData?.name || item;
+            const sellPrice = this.potionPrices?.[item] || seedData?.baseSellPrice || 0;
+    
+            const div = document.createElement("div");
+            div.className = "inventory-item";
+            div.innerHTML = `
+                <span class="emoji">${emoji}</span>
+                <span class="name">${name}</span>
+                <span class="count">x${count}</span>
+                <button class="sell-btn" onclick="game.sellHarvest('${item}')">
+                    Продать (${sellPrice}💀)
+                </button>
+            `;
+            inventoryItems.appendChild(div);
         });
-        
-        if (hasSeeds) {
-            inventoryItems.appendChild(seedsSection);
-        }
-        
-        let hasHarvest = false;
-        const harvestSection = document.createElement('div');
-        harvestSection.className = 'inventory-section';
-        harvestSection.innerHTML = '<h4>💰 Урожай (для продажи)</h4>';
-        
-        Object.entries(this.harvestInventory).forEach(([seedType, count]) => {
-            if (count > 0) {
-                hasHarvest = true;
-                const seedData = this.seedTypes[seedType];
-                const sellCount = this.sellCounters[seedType] || 1;
-                const totalPrice = seedData.baseSellPrice * sellCount;
-                const canSell = count >= sellCount;
-                
-                const harvestItem = document.createElement('div');
-                harvestItem.className = 'inventory-item harvest-item';
-                
-                harvestItem.innerHTML = `
-                    <div class="item-emoji">${seedData.emoji}</div>
-                    <div class="item-name">${seedData.name}</div>
-                    <div class="item-count">Урожая: ${count}</div>
-                    <div class="item-sell-price">Цена за шт: ${seedData.baseSellPrice} душ</div>
-                    
-                    <div class="quantity-controls">
-                        <div class="quantity-info">
-                            <span>Количество: </span>
-                            <span class="quantity-total sell-total">${totalPrice} душ</span>
-                        </div>
-                        <div class="quantity-buttons">
-                            <button class="quantity-btn" onclick="game.decrementSell('${seedType}')">-</button>
-                            <input type="number" 
-                                   class="quantity-input" 
-                                   id="sell-quantity-${seedType}" 
-                                   value="${sellCount}" 
-                                   min="1" 
-                                   max="${count}" 
-                                   onchange="game.updateSellFromInput('${seedType}')">
-                            <button class="quantity-btn" onclick="game.incrementSell('${seedType}')">+</button>
-                            <button class="quantity-max-btn" onclick="game.setMaxSell('${seedType}')">MAX</button>
-                        </div>
-                        <div class="quantity-hint" id="sell-hint-${seedType}">
-                            Можно продать: ${count} шт
-                        </div>
-                    </div>
-                    
-                    <button class="sell-btn" onclick="game.sellHarvest('${seedType}')" 
-                            ${!canSell ? 'disabled' : ''}>
-                        Продать ${sellCount} шт за ${totalPrice} душ
-                    </button>
-                `;
-                
-                harvestSection.appendChild(harvestItem);
-            }
-        });
-        
-        if (hasHarvest) {
-            inventoryItems.appendChild(harvestSection);
-        }
-        
-        if (!hasSeeds && !hasHarvest) {
-            inventoryItems.innerHTML = '<div class="empty-inventory">Инвентарь пуст</div>';
-        }
     }
+
     buySeed(seedType) {
         const seedData = this.seedTypes[seedType];
         const quantity = this.shopCounters[seedType] || 1;
@@ -1968,19 +1906,22 @@ class DarkFarmGame {
         const count = this.cauldron.storedPotions[potionName] || 0;
         if (count <= 0) return;
     
-        // Добавляем в инвентарь
+        // Добавляем в harvestInventory
         if (!this.harvestInventory[potionName]) {
             this.harvestInventory[potionName] = 0;
         }
         this.harvestInventory[potionName] += count;
     
-        // Удаляем из склада
+        // Удаляем из котла
         delete this.cauldron.storedPotions[potionName];
     
-        // Обновляем интерфейс
-        this.updateInventoryDisplay();
+        // 🔧 Обновляем отображение и сохраняем
+        this.updateInventoryDisplay(true); // передаём true, чтобы показать и зелья
+        this.saveCauldron();
+        this.saveGameToCloud();
         this.showMessage('💎', `${potionName} добавлено в инвентарь!`);
     }
+
 
     updateCauldronUI() {
         if (!this.cauldronElement) return;
@@ -2060,6 +2001,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
