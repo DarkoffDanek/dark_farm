@@ -1638,6 +1638,27 @@ class DarkFarmGame {
     // =============================
     // 🔮 АЛХИМИЧЕСКИЙ КОТЁЛ V2
     // =============================
+    collectAllPotions() {
+        const stored = this.cauldron.storedPotions;
+        if (!stored || Object.keys(stored).length === 0) return;
+    
+        let totalCollected = 0;
+        Object.entries(stored).forEach(([name, count]) => {
+            if (!this.harvestInventory[name]) this.harvestInventory[name] = 0;
+            this.harvestInventory[name] += count;
+            totalCollected += count;
+        });
+    
+        this.cauldron.storedPotions = {};
+        this.cauldron.ready = false;
+        this.updateInventoryDisplay();
+        this.updateCauldronUI();
+        this.saveCauldron();
+        this.saveGameToCloud();
+    
+        this.showMessage('🧪', `Забрано ${totalCollected} зелий в инвентарь!`);
+    }
+
     initCauldron() {
         // Загружаем сохранённое состояние
         const savedCauldron = JSON.parse(localStorage.getItem('darkFarm_cauldron') || '{}');
@@ -1809,50 +1830,30 @@ class DarkFarmGame {
     }
 
     
-    // Запуск варки
-    startBrewing(selectedIngredients) {
-        if (this.cauldron.brewing) return;
+        // Запуск варки
+    finishBrewing() {
+        this.cauldron.brewing = false;
+        this.cauldron.ready = true;
     
-        // Проверяем наличие ингредиентов
-        for (const [type, qty] of Object.entries(selectedIngredients)) {
-            if ((this.harvestInventory[type] || 0) < qty) {
-                this.showMessage('🚫', 'Недостаточно ингредиентов!');
-                return;
-            }
+        // Рассчитываем, сколько зелий сварилось = сумма ингредиентов
+        const totalPotions = Object.values(this.cauldron.currentIngredients)
+            .reduce((a, b) => a + b, 0);
+    
+        // Генерируем результат (название)
+        const potionName = this.generatePotionResult(this.cauldron.currentIngredients);
+    
+        // Добавляем в хранилище котла
+        if (!this.cauldron.storedPotions[potionName]) {
+            this.cauldron.storedPotions[potionName] = 0;
         }
+        this.cauldron.storedPotions[potionName] += totalPotions;
     
-        // Списываем ингредиенты
-        Object.entries(selectedIngredients).forEach(([type, qty]) => {
-            this.harvestInventory[type] -= qty;
-        });
-    
-        // Обновляем состояние котла
-        this.cauldron.brewing = true;
-        this.cauldron.ready = false;
-        this.cauldron.progress = 0;
-        this.cauldron.currentIngredients = selectedIngredients;
-        this.cauldron.brewStartTime = Date.now();
-    
-        this.updateInventoryDisplay();
+        this.cauldron.currentIngredients = {};
         this.updateCauldronUI();
         this.saveCauldron();
-        this.showMessage('🔥', 'Варка началась!');
-    
-        // Таймер прогресса
-        const tick = () => {
-            if (!this.cauldron.brewing) return;
-            const elapsed = Date.now() - this.cauldron.brewStartTime;
-            this.cauldron.progress = Math.min(100, (elapsed / this.cauldron.brewTime) * 100);
-            this.updateCauldronUI();
-    
-            if (this.cauldron.progress >= 100) {
-                this.finishBrewing();
-            } else {
-                requestAnimationFrame(tick);
-            }
-        };
-        requestAnimationFrame(tick);
+        this.showMessage('⚗️', `Сварено ${totalPotions} × ${potionName}!`);
     }
+
 
     
     finishBrewing() {
@@ -2047,6 +2048,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
