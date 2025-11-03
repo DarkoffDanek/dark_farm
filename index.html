@@ -44,8 +44,13 @@
             </div>
 
             <!-- Ферма -->
+<!-- Замените текущий блок farm-container на этот: -->
             <div class="farm-container">
-                <div class="farm-area" id="farmArea"></div>
+                <div class="farm-header">
+                    <h3 class="farm-title">🌿 Ваши грядки (${this.plots.length}/${this.maxPlots})</h3>
+                    <button id="toggleFarm" class="toggle-farm-btn">Свернуть грядки</button>
+                </div>
+                <div id="farmArea" class="farm-area"></div>
             </div>
             <!-- ========================= -->
             <!--      ЗОНА ПОСТРОЕК        -->
@@ -121,6 +126,7 @@
     <script src="game.js"></script>
 </body>
 </html>
+
 
 
 
