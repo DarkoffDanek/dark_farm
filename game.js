@@ -658,26 +658,36 @@ class DarkFarmGame {
     }
     
     // Обновленный метод sellHarvest с поддержкой счетчика
-    sellHarvest(seedType) {
-        const sellCount = this.sellCounters[seedType] || 1;
-        const seedData = this.seedTypes[seedType];
-        
-        if (this.harvestInventory[seedType] >= sellCount) {
-            const totalPrice = seedData.baseSellPrice * sellCount;
+    sellHarvest(itemType) {
+        const sellCount = this.sellCounters[itemType] || 1;
+    
+        // Проверяем — это растение или зелье
+        const isPotion = !!this.potionPrices[itemType];
+        const isSeed = !!this.seedTypes[itemType];
+    
+        // Определяем цену
+        const price = isPotion
+            ? this.potionPrices[itemType]
+            : (isSeed ? this.seedTypes[itemType].baseSellPrice : 0);
+    
+        if (!price) return;
+    
+        if (this.harvestInventory[itemType] >= sellCount) {
+            const totalPrice = price * sellCount;
             this.souls += totalPrice;
-            this.harvestInventory[seedType] -= sellCount;
-            
-            // Сбрасываем счетчик после продажи
-            this.sellCounters[seedType] = 1;
-            
+            this.harvestInventory[itemType] -= sellCount;
+            this.sellCounters[itemType] = 1;
+    
             this.updateDisplay();
             this.updateInventoryDisplay();
             this.saveGameToCloud();
-            
-            // Показываем сообщение о успешной продаже
-            this.showSellMessage(seedData.emoji, seedData.name, sellCount, totalPrice);
+    
+            const emoji = isPotion ? '🧪' : this.seedTypes[itemType]?.emoji || '✨';
+            const name = itemType;
+            this.showSellMessage(emoji, name, sellCount, totalPrice);
         }
     }
+
     
     // Метод для показа сообщения о продаже
     showSellMessage(emoji, name, count, price) {
@@ -2050,6 +2060,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
