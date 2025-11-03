@@ -1955,7 +1955,52 @@ class DarkFarmGame {
         return potionName;
     }
 
+        // Продажа конкретного зелья из котла
+    sellPotionFromCauldron(potionName) {
+        const count = this.cauldron.storedPotions[potionName] || 0;
+        if (count <= 0) return;
     
+        const price = this.potionPrices[potionName] || 100;
+        const totalPrice = price * count;
+    
+        this.souls += totalPrice;
+        delete this.cauldron.storedPotions[potionName];
+    
+        this.updateDisplay();
+        this.updateCauldronUI();
+        this.saveCauldron();
+        this.saveGameToCloud();
+    
+        this.showMessage('💰', `Продано ${count} зелий ${potionName} за ${totalPrice} душ!`);
+    }
+    
+    // Продажа всех зелий из котла
+    sellAllPotionsFromCauldron() {
+        const potions = this.cauldron.storedPotions;
+        let totalSold = 0;
+        let totalValue = 0;
+    
+        Object.entries(potions).forEach(([name, count]) => {
+            const price = this.potionPrices[name] || 100;
+            totalValue += price * count;
+            totalSold += count;
+        });
+    
+        if (totalSold === 0) {
+            this.showMessage('🧪', 'Нет зелий для продажи!');
+            return;
+        }
+    
+        this.souls += totalValue;
+        this.cauldron.storedPotions = {};
+    
+        this.updateDisplay();
+        this.updateCauldronUI();
+        this.saveCauldron();
+        this.saveGameToCloud();
+    
+        this.showMessage('💰', `Продано ${totalSold} зелий за ${totalValue} душ!`);
+    }
             // Просмотр накопленных зелий
     openPotionStorage() {
         const modal = document.createElement('div');
@@ -1964,7 +2009,10 @@ class DarkFarmGame {
             <div class="modal-content cauldron-storage">
                 <h3>🧪 Склад зелий</h3>
                 <div id="potionList"></div>
-                <button id="closeStorage" class="cauldron-buy-btn">Закрыть</button>
+                <div class="potion-storage-controls">
+                    <button id="sellAllPotions" class="cauldron-collect-btn">Продать все зелья</button>
+                    <button id="closeStorage" class="cauldron-buy-btn">Закрыть</button>
+                </div>
             </div>
         `;
         document.body.appendChild(modal);
@@ -1975,34 +2023,55 @@ class DarkFarmGame {
         if (potions.length === 0) {
             list.innerHTML = '<p style="text-align: center; color: #888;">Пока нет сваренных зелий.</p>';
         } else {
+            let totalValue = 0;
+            
             potions.forEach(([name, count]) => {
+                const price = this.potionPrices[name] || 100; // цена по умолчанию
+                const totalPrice = price * count;
+                totalValue += totalPrice;
+                
                 const item = document.createElement('div');
                 item.className = 'potion-item';
                 item.innerHTML = `
-                    <span class="name">${name}</span>
-                    <div class="quantity-controls">
-                        <span class="count">x${count}</span>
-                        <button class="transfer-btn">↩️ Забрать</button>
+                    <div class="potion-info">
+                        <span class="potion-emoji">${name.split(' ')[0]}</span>
+                        <span class="potion-name">${name}</span>
                     </div>
+                    <div class="potion-details">
+                        <span class="potion-count">${count} шт.</span>
+                        <span class="potion-price">${price} душ/шт.</span>
+                        <span class="potion-total">Всего: ${totalPrice} душ</span>
+                    </div>
+                    <button class="sell-btn sell-potion-btn" data-potion="${name}">
+                        Продать за ${totalPrice} душ
+                    </button>
                 `;
                 
-                item.querySelector('.transfer-btn').addEventListener('click', () => {
-                    this.transferPotionToInventory(name);
-                    
-                    // Обновляем список после переноса
-                    const remainingCount = this.cauldron.storedPotions[name] || 0;
-                    if (remainingCount > 0) {
-                        item.querySelector('.count').textContent = `x${remainingCount}`;
-                    } else {
-                        item.remove();
-                        // Если больше нет зелий, показываем сообщение
-                        if (Object.keys(this.cauldron.storedPotions).length === 0) {
-                            list.innerHTML = '<p style="text-align: center; color: #888;">Все зелья забраны в инвентарь.</p>';
-                        }
-                    }
-                });
-                
                 list.appendChild(item);
+            });
+    
+            // Добавляем информацию об общей стоимости
+            const totalInfo = document.createElement('div');
+            totalInfo.className = 'potion-total-value';
+            totalInfo.innerHTML = `<strong>Общая стоимость всех зелий: ${totalValue} душ</strong>`;
+            list.appendChild(totalInfo);
+    
+            // Обработчики для кнопок продажи
+            list.addEventListener('click', (e) => {
+                if (e.target.classList.contains('sell-potion-btn')) {
+                    const potionName = e.target.dataset.potion;
+                    this.sellPotionFromCauldron(potionName);
+                    
+                    // Обновляем модальное окно
+                    modal.remove();
+                    this.openPotionStorage();
+                }
+            });
+    
+            // Обработчик для кнопки "Продать все"
+            document.getElementById('sellAllPotions').addEventListener('click', () => {
+                this.sellAllPotionsFromCauldron();
+                modal.remove();
             });
         }
     
@@ -2108,6 +2177,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
