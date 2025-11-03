@@ -2507,4 +2507,31 @@ h1, h3 {
 #potionList::-webkit-scrollbar-thumb:hover {
   background: rgba(178, 140, 255, 0.5);
 }
+/* ============================= */
+/*     Кнопка "Забрать всё"     */
+/* ============================= */
+.cauldron-collect-btn {
+    background: linear-gradient(135deg, #2d5a2d, #4a7c4a);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.cauldron-collect-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3d7a3d, #5a9c5a);
+    transform: scale(1.03);
+}
+
+.cauldron-collect-btn:disabled {
+    background: #333;
+    color: #777;
+    cursor: not-allowed;
+}
+
 
