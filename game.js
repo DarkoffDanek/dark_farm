@@ -570,7 +570,6 @@ class DarkFarmGame {
         }
         return false;
     }
-    
     getRandomSeedDrop(seedType) {
         const seedData = this.seedTypes[seedType];
         const dropChance = seedData.dropChance;
@@ -1466,6 +1465,7 @@ class DarkFarmGame {
 }
 
 // Инициализация игры
+// Инициализация игры
 let game;
 window.onload = function() {
     game = new DarkFarmGame();
@@ -1499,7 +1499,8 @@ window.onload = function() {
             authModal.classList.add('hidden');
         }
     });
-}
+}; // <- ТОЛЬКО ОДНА закрывающая скобка и точка с запятой
+
 
 
 
