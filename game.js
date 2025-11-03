@@ -1676,21 +1676,35 @@ class DarkFarmGame {
             }
         }
     }
-        // =============================
-    // 🔮 АЛХИМИЧЕСКИЙ КОТЁЛ
+    // =============================
+    // 🔮 АЛХИМИЧЕСКИЙ КОТЁЛ V2
     // =============================
     initCauldron() {
+        // Загружаем сохранённое состояние
+        const savedCauldron = JSON.parse(localStorage.getItem('darkFarm_cauldron') || '{}');
         this.cauldron = {
-            unlocked: false,
-            brewing: false,
-            ready: false,
-            progress: 0,
-            brewTime: 15000, // 15 сек варки
-            currentIngredient: null,
-            result: null
+            unlocked: savedCauldron.unlocked || false,
+            brewing: savedCauldron.brewing || false,
+            ready: savedCauldron.ready || false,
+            progress: savedCauldron.progress || 0,
+            brewTime: 15000,
+            currentIngredients: savedCauldron.currentIngredients || {},
+            storedPotions: savedCauldron.storedPotions || {},
+            brewStartTime: savedCauldron.brewStartTime || null
         };
     
-        // Кнопки
+        // Восстанавливаем офлайн-прогресс варки
+        if (this.cauldron.brewing && this.cauldron.brewStartTime) {
+            const elapsed = Date.now() - this.cauldron.brewStartTime;
+            const percent = (elapsed / this.cauldron.brewTime) * 100;
+            if (percent >= 100) {
+                this.finishBrewing();
+            } else {
+                this.cauldron.progress = percent;
+            }
+        }
+    
+        // Элементы интерфейса
         this.cauldronElement = document.getElementById('cauldron');
         this.buyBtn = document.getElementById('buyCauldronBtn');
         this.startBtn = document.getElementById('startBrewBtn');
@@ -1699,10 +1713,22 @@ class DarkFarmGame {
         this.info = document.getElementById('cauldronInfo');
     
         this.buyBtn.addEventListener('click', () => this.buyCauldron());
-        this.startBtn.addEventListener('click', () => this.startBrewing());
-        this.collectBtn.addEventListener('click', () => this.collectPotion());
+        this.startBtn.addEventListener('click', () => this.openIngredientSelection());
+        this.collectBtn.addEventListener('click', () => this.openPotionStorage());
     
         this.updateCauldronUI();
+    }
+    
+    saveCauldron() {
+        localStorage.setItem('darkFarm_cauldron', JSON.stringify({
+            unlocked: this.cauldron.unlocked,
+            brewing: this.cauldron.brewing,
+            ready: this.cauldron.ready,
+            progress: this.cauldron.progress,
+            currentIngredients: this.cauldron.currentIngredients,
+            storedPotions: this.cauldron.storedPotions,
+            brewStartTime: this.cauldron.brewStartTime
+        }));
     }
     
     buyCauldron() {
@@ -1713,81 +1739,183 @@ class DarkFarmGame {
             this.showMessage('⚗️', 'Алхимический котёл приобретён!');
             this.updateDisplay();
             this.updateCauldronUI();
+            this.saveCauldron();
             this.saveGameToCloud();
         } else {
             this.showMessage('💀', 'Недостаточно душ!');
         }
     }
     
-    startBrewing() {
-        if (!this.cauldron.unlocked || this.cauldron.brewing) return;
+    // Выбор ингредиентов для варки
+    openIngredientSelection() {
+        if (!this.cauldron.unlocked) return;
     
-        // Проверяем, есть ли хоть один собранный цветок
-        const available = Object.entries(this.harvestInventory).find(([type, count]) => count > 0);
-        if (!available) {
-            this.showMessage('🌾', 'Нет ингредиентов для варки!');
+        const modal = document.createElement('div');
+        modal.className = 'modal cauldron-modal';
+        modal.innerHTML = `
+            <div class="modal-content cauldron-select">
+                <h3>🧪 Выберите ингредиенты для зелья</h3>
+                <div id="ingredientList"></div>
+                <button id="startBrewConfirm" class="cauldron-start-btn">Начать варку</button>
+                <button id="cancelBrew" class="cauldron-buy-btn">Отмена</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    
+        const list = modal.querySelector('#ingredientList');
+        Object.entries(this.harvestInventory).forEach(([type, count]) => {
+            if (count > 0) {
+                const seed = this.seedTypes[type];
+                const qty = this.cauldron.currentIngredients[type] || 0;
+                const item = document.createElement('div');
+                item.className = 'ingredient-item';
+                item.innerHTML = `
+                    <span>${seed.emoji} ${seed.name} (${count})</span>
+                    <div class="quantity-controls">
+                        <button onclick="game.decrementCauldronIngredient('${type}')">-</button>
+                        <input id="ingredient-${type}" type="number" min="0" max="${count}" value="${qty}">
+                        <button onclick="game.incrementCauldronIngredient('${type}', ${count})">+</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+        });
+    
+        modal.querySelector('#startBrewConfirm').addEventListener('click', () => {
+            this.startBrewingFromSelection();
+            modal.remove();
+        });
+        modal.querySelector('#cancelBrew').addEventListener('click', () => modal.remove());
+    }
+    
+    incrementCauldronIngredient(type, max) {
+        const input = document.getElementById(`ingredient-${type}`);
+        let val = parseInt(input.value) || 0;
+        if (val < max) val++;
+        input.value = val;
+        this.cauldron.currentIngredients[type] = val;
+    }
+    
+    decrementCauldronIngredient(type) {
+        const input = document.getElementById(`ingredient-${type}`);
+        let val = parseInt(input.value) || 0;
+        if (val > 0) val--;
+        input.value = val;
+        this.cauldron.currentIngredients[type] = val;
+    }
+    
+    // Начало варки из выбранных ингредиентов
+    startBrewingFromSelection() {
+        const used = Object.entries(this.cauldron.currentIngredients).filter(([t, q]) => q > 0);
+        if (used.length === 0) {
+            this.showMessage('🌾', 'Выберите ингредиенты!');
             return;
         }
     
-        const [ingredient, count] = available;
-        this.harvestInventory[ingredient]--;
-        this.cauldron.currentIngredient = ingredient;
-        this.cauldron.brewing = true;
-        this.cauldron.progress = 0;
-        this.cauldron.ready = false;
+        // Проверяем наличие ингредиентов
+        for (const [type, qty] of used) {
+            if ((this.harvestInventory[type] || 0) < qty) {
+                this.showMessage('🚫', 'Недостаточно ингредиентов!');
+                return;
+            }
+        }
     
-        this.showMessage('🔥', 'Началась варка зелья...');
+        // Списываем
+        used.forEach(([type, qty]) => {
+            this.harvestInventory[type] -= qty;
+        });
+    
+        this.cauldron.brewing = true;
+        this.cauldron.ready = false;
+        this.cauldron.progress = 0;
+        this.cauldron.brewStartTime = Date.now();
+        this.updateInventoryDisplay();
+    
+        this.showMessage('🔥', 'Варка началась!');
         this.updateCauldronUI();
+        this.saveCauldron();
     
         const interval = setInterval(() => {
             if (!this.cauldron.brewing) {
                 clearInterval(interval);
                 return;
             }
-            this.cauldron.progress += 100 / (this.cauldron.brewTime / 200);
+            const elapsed = Date.now() - this.cauldron.brewStartTime;
+            this.cauldron.progress = Math.min(100, (elapsed / this.cauldron.brewTime) * 100);
             if (this.cauldron.progress >= 100) {
-                this.cauldron.progress = 100;
-                this.cauldron.brewing = false;
-                this.cauldron.ready = true;
-                this.cauldron.result = this.generatePotion(this.cauldron.currentIngredient);
-                this.showMessage('✨', 'Зелье готово!');
                 clearInterval(interval);
+                this.finishBrewing();
             }
             this.updateCauldronUI();
-        }, 200);
+        }, 500);
     }
     
-    generatePotion(ingredient) {
-        const map = {
-            'crystal_flower': '💎 Зелье ясности',
-            'blood_rose': '🩸 Зелье силы',
-            'moonlight_lily': '🌙 Эликсир ночи',
-            'phantom_orchid': '👻 Зелье духов',
-            'ghost_pumpkin': '🎃 Зелье кошмаров',
-            'shadow_berry': '🍇 Зелье теней',
-            'void_mushroom': '🍄 Эликсир пустоты'
-        };
-        return map[ingredient] || '🧪 Таинственное зелье';
-    }
+    finishBrewing() {
+        this.cauldron.brewing = false;
+        this.cauldron.ready = true;
+        this.cauldron.progress = 100;
+        this.cauldron.brewStartTime = null;
     
-    collectPotion() {
-        if (!this.cauldron.ready) return;
+        // Генерируем результат
+        const potionName = this.generatePotionResult(this.cauldron.currentIngredients);
+        if (!this.cauldron.storedPotions[potionName]) this.cauldron.storedPotions[potionName] = 0;
+        this.cauldron.storedPotions[potionName]++;
     
-        const potion = this.cauldron.result || '🧪 Неизвестное зелье';
-        this.showMessage('🧪', `${potion} получено!`);
-    
-        // Награда: добавляем души
-        const reward = Math.floor(Math.random() * 100) + 150;
-        this.souls += reward;
-    
-        this.cauldron.ready = false;
-        this.cauldron.result = null;
-        this.cauldron.currentIngredient = null;
-        this.cauldron.progress = 0;
-    
-        this.updateDisplay();
+        this.cauldron.currentIngredients = {};
+        this.showMessage('✨', `${potionName} готово!`);
+        this.saveCauldron();
         this.updateCauldronUI();
-        this.saveGameToCloud();
+    }
+    
+    generatePotionResult(ingredients) {
+        const types = Object.keys(ingredients);
+        if (types.length === 1) {
+            const type = types[0];
+            return {
+                'shadow_berry': '🍇 Зелье теней',
+                'ghost_pumpkin': '🎃 Зелье кошмаров',
+                'void_mushroom': '🍄 Эликсир пустоты',
+                'crystal_flower': '💎 Зелье ясности',
+                'blood_rose': '🩸 Зелье силы',
+                'moonlight_lily': '🌙 Эликсир ночи',
+                'phantom_orchid': '💮 Зелье духов'
+            }[type] || '🧪 Таинственное зелье';
+        }
+        return '⚗️ Сложное зелье';
+    }
+    
+    // Просмотр накопленных зелий
+    openPotionStorage() {
+        const modal = document.createElement('div');
+        modal.className = 'modal cauldron-modal';
+        modal.innerHTML = `
+            <div class="modal-content cauldron-storage">
+                <h3>🧪 Склад зелий</h3>
+                <div id="potionList"></div>
+                <button id="closeStorage" class="cauldron-buy-btn">Закрыть</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    
+        const list = modal.querySelector('#potionList');
+        const potions = Object.entries(this.cauldron.storedPotions);
+        if (potions.length === 0) {
+            list.innerHTML = '<p>Пока нет сваренных зелий.</p>';
+        } else {
+            potions.forEach(([name, count]) => {
+                const item = document.createElement('div');
+                item.className = 'potion-item';
+                item.innerHTML = `
+                    <span>${name}</span>
+                    <div class="quantity-controls">
+                        <span>x${count}</span>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+    
+        modal.querySelector('#closeStorage').addEventListener('click', () => modal.remove());
     }
     
     updateCauldronUI() {
@@ -1813,21 +1941,13 @@ class DarkFarmGame {
             this.buyBtn.disabled = true;
             this.startBtn.disabled = true;
             this.collectBtn.disabled = true;
-        } else if (this.cauldron.ready) {
-            el.classList.remove('working');
-            el.classList.add('ready');
-            this.progressFill.style.width = '100%';
-            this.info.textContent = 'Готово!';
-            this.buyBtn.disabled = true;
-            this.startBtn.disabled = true;
-            this.collectBtn.disabled = false;
         } else {
-            el.classList.remove('working', 'ready');
-            this.progressFill.style.width = '0%';
-            this.info.textContent = 'Готов к варке';
+            el.classList.remove('working');
+            this.progressFill.style.width = this.cauldron.ready ? '100%' : '0%';
+            this.info.textContent = this.cauldron.ready ? 'Готово! (можно варить снова)' : 'Готов к варке';
             this.buyBtn.disabled = true;
             this.startBtn.disabled = false;
-            this.collectBtn.disabled = true;
+            this.collectBtn.disabled = false;
         }
     }
     
@@ -1842,6 +1962,7 @@ class DarkFarmGame {
             setTimeout(() => msg.remove(), 500);
         }, 3000);
     }
+
 
     
 }
@@ -1875,6 +1996,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
