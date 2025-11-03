@@ -2333,3 +2333,178 @@ h1, h3 {
   .buildings-container { gap: 12px; }
   .cauldron-emoji { font-size: 2.6rem; }
 }
+/* ================================
+   ⚗️ Алхимический котёл — модалки
+   ================================ */
+
+.modal.cauldron-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 15, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(6px);
+  animation: modal-fade 0.3s ease;
+}
+
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content.cauldron-select,
+.modal-content.cauldron-storage {
+  background: linear-gradient(135deg, #1a1b26, #262a3f);
+  color: #e0d8ff;
+  border: 2px solid #5d3891;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 0 30px rgba(93, 56, 145, 0.5);
+  text-align: center;
+  position: relative;
+}
+
+.modal-content h3 {
+  margin-bottom: 18px;
+  font-size: 1.4rem;
+  color: #b28cff;
+  text-shadow: 0 0 8px rgba(178, 140, 255, 0.6);
+}
+
+/* Ингредиенты */
+#ingredientList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ingredient-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(178, 140, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.ingredient-item:hover {
+  background: rgba(178, 140, 255, 0.08);
+}
+
+/* Контролы количества (+/-) */
+.ingredient-item .quantity-controls,
+.potion-item .quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ingredient-item input {
+  width: 60px;
+  text-align: center;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid #5d3891;
+  background: #16182b;
+  color: #fff;
+  font-weight: 700;
+}
+
+.ingredient-item button {
+  background: #5d3891;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.15s ease;
+}
+
+.ingredient-item button:hover {
+  background: #7e57c2;
+  transform: translateY(-1px);
+}
+
+/* Кнопки подтверждения / закрытия */
+.cauldron-start-btn,
+.cauldron-buy-btn {
+  margin-top: 10px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.cauldron-start-btn {
+  background: linear-gradient(135deg, #e94560, #ff6b95);
+}
+.cauldron-start-btn:hover {
+  background: linear-gradient(135deg, #ff6b95, #e94560);
+}
+
+.cauldron-buy-btn {
+  background: linear-gradient(135deg, #444, #555);
+}
+.cauldron-buy-btn:hover {
+  background: linear-gradient(135deg, #666, #777);
+}
+
+/* Склад зелий */
+#potionList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.potion-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(178, 140, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #dcd2ff;
+}
+
+.potion-item span {
+  font-size: 1rem;
+  text-shadow: 0 0 6px rgba(142, 97, 255, 0.6);
+}
+
+/* Скроллбар стилизация */
+#ingredientList::-webkit-scrollbar,
+#potionList::-webkit-scrollbar {
+  width: 6px;
+}
+#ingredientList::-webkit-scrollbar-thumb,
+#potionList::-webkit-scrollbar-thumb {
+  background: rgba(178, 140, 255, 0.3);
+  border-radius: 3px;
+}
+#ingredientList::-webkit-scrollbar-thumb:hover,
+#potionList::-webkit-scrollbar-thumb:hover {
+  background: rgba(178, 140, 255, 0.5);
+}
+
