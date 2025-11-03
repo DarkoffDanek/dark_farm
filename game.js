@@ -30,7 +30,8 @@ class DarkFarmGame {
             startTime: null,
             totalTime: 0,
             inputQuantity: 0,
-            outputQuantity: 0
+            outputQuantity: 0,
+            endTime: null
         };
         
         // Типы семян
@@ -138,6 +139,7 @@ class DarkFarmGame {
             }
         }
         
+        this.lastUpdate = Date.now();
         this.startGameLoop();
         this.initShop();
         this.updateInventoryDisplay();
@@ -219,7 +221,7 @@ class DarkFarmGame {
                         ${availableRecipes.map(recipeType => {
                             const recipe = this.elixirRecipes[recipeType];
                             const seed = this.seedTypes[recipeType];
-                            return `<option value="${recipeType}">${seed.name} (доступно: ${this.harvestInventory[recipeType]}) → ${recipe.name}</option>`;
+                            return `<option value="${recipeType}">${seed.name} (доступно: ${this.harvestInventory[recipeType] || 0}) → ${recipe.name}</option>`;
                         }).join('')}
                     </select>
                     
@@ -271,6 +273,9 @@ class DarkFarmGame {
             if (parseInt(quantityInput.value) > maxQuantity) {
                 quantityInput.value = maxQuantity;
             }
+        } else {
+            quantityInput.max = 1;
+            quantityInput.value = 1;
         }
     }
     
@@ -389,6 +394,7 @@ class DarkFarmGame {
             }
         }
     }
+
     // ========== ОСНОВНЫЕ МЕТОДЫ ИГРЫ ==========
 
     buySeed(seedType) {
@@ -1398,7 +1404,8 @@ class DarkFarmGame {
                     startTime: null,
                     totalTime: 0,
                     inputQuantity: 0,
-                    outputQuantity: 0
+                    outputQuantity: 0,
+                    endTime: null
                 };
                 
                 this.lastUpdate = gameData.lastUpdate || Date.now();
@@ -1423,5 +1430,26 @@ window.onload = function() {
     document.getElementById('inventoryToggle').addEventListener('click', () => {
         game.toggleInventory();
     });
-};
 
+    // Добавляем обработчик для кнопки аккаунта
+    document.getElementById('authButton').addEventListener('click', () => {
+        // Здесь можно добавить функциональность для аккаунта
+        alert('Функция аккаунта будет добавлена позже');
+    });
+
+    // Обработчики для модального окна авторизации
+    const authModal = document.getElementById('authModal');
+    const closeBtn = document.querySelector('.close');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            authModal.classList.add('hidden');
+        });
+    }
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === authModal) {
+            authModal.classList.add('hidden');
+        }
+    });
+};
