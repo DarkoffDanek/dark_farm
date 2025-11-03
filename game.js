@@ -24,7 +24,18 @@ class DarkFarmGame {
         this.autoSaveInterval = null;
         
         this.lastUpdate = Date.now();
-        
+        this.potionPrices = {
+            '🧪 Таинственное зелье': 150,
+            '💎 Зелье ясности': 200,
+            '🩸 Зелье силы': 220,
+            '🌙 Эликсир ночи': 250,
+            '💮 Зелье духов': 240,
+            '🎃 Зелье кошмаров': 260,
+            '🍇 Зелье теней': 200,
+            '🍄 Эликсир пустоты': 280,
+            '⚗️ Сложное зелье': 300
+        };
+
         // ✅ ПРАВИЛЬНЫЙ ПОРЯДОК: seedTypes ДО инициализации shopCounters
         this.seedTypes = {
             'shadow_berry': {
@@ -1900,7 +1911,7 @@ class DarkFarmGame {
     }
 
     
-    // Просмотр накопленных зелий
+        // Просмотр накопленных зелий
     openPotionStorage() {
         const modal = document.createElement('div');
         modal.className = 'modal cauldron-modal';
@@ -1922,18 +1933,45 @@ class DarkFarmGame {
                 const item = document.createElement('div');
                 item.className = 'potion-item';
                 item.innerHTML = `
-                    <span>${name}</span>
+                    <span class="name">${name}</span>
                     <div class="quantity-controls">
                         <span>x${count}</span>
+                        <button class="transfer-btn">↩️ Забрать</button>
                     </div>
                 `;
+                item.querySelector('.transfer-btn').addEventListener('click', () => {
+                    this.transferPotionToInventory(name);
+                    this.saveCauldron();
+                    item.remove();
+                    if (Object.keys(this.cauldron.storedPotions).length === 0) {
+                        list.innerHTML = '<p>Все зелья забраны в инвентарь.</p>';
+                    }
+                });
                 list.appendChild(item);
             });
         }
     
         modal.querySelector('#closeStorage').addEventListener('click', () => modal.remove());
     }
+
+    transferPotionToInventory(potionName) {
+        const count = this.cauldron.storedPotions[potionName] || 0;
+        if (count <= 0) return;
     
+        // Добавляем в инвентарь
+        if (!this.harvestInventory[potionName]) {
+            this.harvestInventory[potionName] = 0;
+        }
+        this.harvestInventory[potionName] += count;
+    
+        // Удаляем из склада
+        delete this.cauldron.storedPotions[potionName];
+    
+        // Обновляем интерфейс
+        this.updateInventoryDisplay();
+        this.showMessage('💎', `${potionName} добавлено в инвентарь!`);
+    }
+
     updateCauldronUI() {
         if (!this.cauldronElement) return;
         const el = this.cauldronElement;
@@ -2012,6 +2050,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
