@@ -1705,15 +1705,17 @@ class DarkFarmGame {
         }
     }
     
-    // Выбор ингредиентов для варки
+// ---------------------------
+// Выбор ингредиентов и варка
+    // ---------------------------
     openIngredientSelection() {
-        if (!this.cauldron.unlocked) return;
+        if (!this.cauldron.unlocked || this.cauldron.brewing) return;
     
         const modal = document.createElement('div');
         modal.className = 'modal cauldron-modal';
         modal.innerHTML = `
             <div class="modal-content cauldron-select">
-                <h3>🧪 Выберите ингредиенты для зелья</h3>
+                <h3>🧪 Выберите ингредиенты для варки</h3>
                 <div id="ingredientList"></div>
                 <button id="startBrewConfirm" class="cauldron-start-btn">Начать варку</button>
                 <button id="cancelBrew" class="cauldron-buy-btn">Отмена</button>
@@ -1722,92 +1724,109 @@ class DarkFarmGame {
         document.body.appendChild(modal);
     
         const list = modal.querySelector('#ingredientList');
+        list.innerHTML = '';
+    
+        // Отображаем только доступные цветы
         Object.entries(this.harvestInventory).forEach(([type, count]) => {
-            if (count > 0) {
-                const seed = this.seedTypes[type];
-                const qty = this.cauldron.currentIngredients[type] || 0;
-                const item = document.createElement('div');
-                item.className = 'ingredient-item';
-                item.innerHTML = `
-                    <span>${seed.emoji} ${seed.name} (${count})</span>
-                    <div class="quantity-controls">
-                        <button onclick="game.decrementCauldronIngredient('${type}')">-</button>
-                        <input id="ingredient-${type}" type="number" min="0" max="${count}" value="${qty}">
-                        <button onclick="game.incrementCauldronIngredient('${type}', ${count})">+</button>
-                    </div>
-                `;
-                list.appendChild(item);
+            const seed = this.seedTypes[type];
+            if (!seed || count <= 0) return;
+    
+            const item = document.createElement('div');
+            item.className = 'ingredient-item';
+            item.innerHTML = `
+                <span>${seed.emoji} ${seed.name} (${count})</span>
+                <div class="quantity-controls">
+                    <button data-type="${type}" class="dec">-</button>
+                    <input id="ingredient-${type}" type="number" min="0" max="${count}" value="0">
+                    <button data-type="${type}" class="inc">+</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    
+        // Локальные обработчики
+        list.addEventListener('click', e => {
+            if (e.target.classList.contains('inc') || e.target.classList.contains('dec')) {
+                const type = e.target.dataset.type;
+                const input = document.getElementById(`ingredient-${type}`);
+                let val = parseInt(input.value) || 0;
+                const max = parseInt(input.max);
+    
+                if (e.target.classList.contains('inc') && val < max) val++;
+                if (e.target.classList.contains('dec') && val > 0) val--;
+    
+                input.value = val;
             }
         });
     
+        // Начать варку
         modal.querySelector('#startBrewConfirm').addEventListener('click', () => {
-            this.startBrewingFromSelection();
+            const selected = {};
+            document.querySelectorAll('#ingredientList input').forEach(input => {
+                const val = parseInt(input.value);
+                if (val > 0) {
+                    const type = input.id.replace('ingredient-', '');
+                    selected[type] = val;
+                }
+            });
+    
+            if (Object.keys(selected).length === 0) {
+                this.showMessage('🌾', 'Выберите ингредиенты!');
+                return;
+            }
+    
+            this.startBrewing(selected);
             modal.remove();
         });
+    
         modal.querySelector('#cancelBrew').addEventListener('click', () => modal.remove());
     }
     
-    incrementCauldronIngredient(type, max) {
-        const input = document.getElementById(`ingredient-${type}`);
-        let val = parseInt(input.value) || 0;
-        if (val < max) val++;
-        input.value = val;
-        this.cauldron.currentIngredients[type] = val;
-    }
-    
-    decrementCauldronIngredient(type) {
-        const input = document.getElementById(`ingredient-${type}`);
-        let val = parseInt(input.value) || 0;
-        if (val > 0) val--;
-        input.value = val;
-        this.cauldron.currentIngredients[type] = val;
-    }
-    
-    // Начало варки из выбранных ингредиентов
-    startBrewingFromSelection() {
-        const used = Object.entries(this.cauldron.currentIngredients).filter(([t, q]) => q > 0);
-        if (used.length === 0) {
-            this.showMessage('🌾', 'Выберите ингредиенты!');
-            return;
-        }
+    // Запуск варки
+    startBrewing(selectedIngredients) {
+        if (this.cauldron.brewing) return;
     
         // Проверяем наличие ингредиентов
-        for (const [type, qty] of used) {
+        for (const [type, qty] of Object.entries(selectedIngredients)) {
             if ((this.harvestInventory[type] || 0) < qty) {
                 this.showMessage('🚫', 'Недостаточно ингредиентов!');
                 return;
             }
         }
     
-        // Списываем
-        used.forEach(([type, qty]) => {
+        // Списываем ингредиенты
+        Object.entries(selectedIngredients).forEach(([type, qty]) => {
             this.harvestInventory[type] -= qty;
         });
     
+        // Обновляем состояние котла
         this.cauldron.brewing = true;
         this.cauldron.ready = false;
         this.cauldron.progress = 0;
+        this.cauldron.currentIngredients = selectedIngredients;
         this.cauldron.brewStartTime = Date.now();
-        this.updateInventoryDisplay();
     
-        this.showMessage('🔥', 'Варка началась!');
+        this.updateInventoryDisplay();
         this.updateCauldronUI();
         this.saveCauldron();
+        this.showMessage('🔥', 'Варка началась!');
     
-        const interval = setInterval(() => {
-            if (!this.cauldron.brewing) {
-                clearInterval(interval);
-                return;
-            }
+        // Таймер прогресса
+        const tick = () => {
+            if (!this.cauldron.brewing) return;
             const elapsed = Date.now() - this.cauldron.brewStartTime;
             this.cauldron.progress = Math.min(100, (elapsed / this.cauldron.brewTime) * 100);
-            if (this.cauldron.progress >= 100) {
-                clearInterval(interval);
-                this.finishBrewing();
-            }
             this.updateCauldronUI();
-        }, 500);
+    
+            if (this.cauldron.progress >= 100) {
+                this.finishBrewing();
+            } else {
+                requestAnimationFrame(tick);
+            }
+        };
+        requestAnimationFrame(tick);
     }
+
     
     finishBrewing() {
         this.cauldron.brewing = false;
@@ -2001,6 +2020,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
