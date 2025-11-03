@@ -1890,3 +1890,241 @@ h1, h3 {
         font-size: 1.2em;
     }
 }
+/* Стили для котла */
+.cauldron-building {
+    background: linear-gradient(135deg, #2d3948, #4a5a7a);
+    border: 2px solid #5d3891;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s;
+    width: 320px;
+    min-height: 380px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.cauldron-building.locked {
+    background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+    border-color: #666;
+    filter: grayscale(0.8);
+}
+
+.cauldron-building.working {
+    background: linear-gradient(135deg, #5a2d5a, #7c4a7c);
+    border-color: #e94560;
+    animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+.cauldron-building.ready {
+    background: linear-gradient(135deg, #2d5a2d, #4a7c4a);
+    border-color: #4CAF50;
+    animation: harvest-glow 1.5s ease-in-out infinite;
+}
+
+.cauldron-emoji {
+    font-size: 4em;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+}
+
+.cauldron-name {
+    font-weight: bold;
+    color: #e94560;
+    margin-bottom: 10px;
+    font-size: 1.4em;
+}
+
+.cauldron-price {
+    color: #c9c9c9;
+    font-size: 1.1em;
+    margin: 8px 0;
+}
+
+.cauldron-description {
+    color: #a9a9a9;
+    font-size: 0.95em;
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+.cauldron-stats {
+    color: #4CAF50;
+    font-size: 0.9em;
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+.cauldron-info {
+    color: #c9c9c9;
+    font-size: 0.85em;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+.cauldron-status {
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    font-size: 0.95em;
+}
+
+/* Прогресс бар котла */
+.cauldron-progress {
+    margin: 15px 0;
+}
+
+.cauldron-progress-info {
+    font-size: 0.9em;
+    color: #c9c9c9;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.cauldron-progress-bar {
+    width: 100%;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #394867;
+}
+
+.cauldron-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e94560, #ff6b95);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Интерфейс управления котлом */
+.cauldron-controls {
+    margin: 15px 0;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.cauldron-input-label {
+    font-size: 0.95em;
+    color: #c9c9c9;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.cauldron-seed-select {
+    width: 100%;
+    padding: 10px;
+    background: #0f3460;
+    border: 1px solid #394867;
+    border-radius: 6px;
+    color: white;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.cauldron-seed-select:focus {
+    outline: none;
+    border-color: #5d3891;
+    box-shadow: 0 0 5px rgba(93, 56, 145, 0.5);
+}
+
+.cauldron-quantity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+    justify-content: center;
+}
+
+.cauldron-quantity-input {
+    width: 70px;
+    padding: 8px;
+    background: #1a1a2e;
+    border: 1px solid #394867;
+    border-radius: 5px;
+    color: white;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.cauldron-quantity-btn {
+    background: #5d3891;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.cauldron-quantity-btn:hover:not(:disabled) {
+    background: #6d4891;
+    transform: scale(1.1);
+}
+
+.cauldron-quantity-btn:disabled {
+    background: #3a2d4a;
+    cursor: not-allowed;
+}
+
+/* Кнопки котла */
+.cauldron-buy-btn,
+.cauldron-start-btn,
+.cauldron-collect-btn {
+    background: #5d3891;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    margin-top: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.3s;
+    font-size: 1em;
+    font-weight: bold;
+}
+
+.cauldron-buy-btn:hover:not(:disabled) {
+    background: #6d4891;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.cauldron-start-btn {
+    background: #e94560;
+}
+
+.cauldron-start-btn:hover:not(:disabled) {
+    background: #ff6b95;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+}
+
+.cauldron-collect-btn {
+    background: #4CAF50;
+}
+
+.cauldron-collect-btn:hover:not(:disabled) {
+    background: #66BB6A;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.cauldron-buy-btn:disabled,
+.cauldron-start-btn:disabled,
+.cauldron-collect-btn:disabled {
+    background: #2a2a2a;
+    color: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
