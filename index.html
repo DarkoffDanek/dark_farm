@@ -47,6 +47,40 @@
             <div class="farm-container">
                 <div class="farm-area" id="farmArea"></div>
             </div>
+            <!-- ========================= -->
+            <!--      ЗОНА ПОСТРОЕК        -->
+            <!-- ========================= -->
+            <section class="buildings-area">
+              <h2 class="section-title">Постройки</h2>
+              <div class="buildings-container">
+            
+                <!-- КОТЕЛ -->
+                <div id="cauldron" class="cauldron-building locked">
+                  <div class="cauldron-emoji">⚗️</div>
+                  <div class="cauldron-name">Алхимический котёл</div>
+                  <div class="cauldron-price">Цена: 500 душ</div>
+                  <div class="cauldron-description">Здесь можно варить эликсиры из выращенных цветов.</div>
+            
+                  <!-- Прогресс варки -->
+                  <div class="cauldron-progress-bar">
+                    <div class="cauldron-progress-fill" id="cauldronProgress"></div>
+                  </div>
+            
+                  <!-- Инфо -->
+                  <div class="cauldron-info" id="cauldronInfo">Не куплен</div>
+            
+                  <!-- Кнопки -->
+                  <div class="cauldron-controls">
+                    <button id="buyCauldronBtn" class="cauldron-buy-btn">Купить котёл (500 душ)</button>
+                    <button id="startBrewBtn" class="cauldron-start-btn" disabled>Начать варку</button>
+                    <button id="collectPotionBtn" class="cauldron-collect-btn" disabled>Забрать зелье</button>
+                  </div>
+                </div>
+                <!-- /КОТЕЛ -->
+            
+              </div>
+            </section>
+
 
 
             <div class="instructions">
@@ -87,4 +121,5 @@
     <script src="game.js"></script>
 </body>
 </html>
+
 
