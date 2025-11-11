@@ -770,7 +770,7 @@ class DarkFarmGame {
         inventoryItems.innerHTML = "";
         const farmTitle = document.querySelector('.farm-title');
         if (farmTitle) {
-            farmTitle.textContent = `🌿 Ваши грядки (${this.plots.length}/${this.maxPlots})`;
+            farmTitle.textContent = `🌿 Ваши грядки (${this.plots.length}/${this.maxPlots-1})`;
         }
         let hasItems = false;
     
