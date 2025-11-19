@@ -41,10 +41,10 @@ class DarkFarmGame {
             'shadow_berry': {
                 name: 'Теневая ягода',
                 emoji: '🍇',
-                time: 150000,
-                clicks: 50,
-                buyPrice: 10,
-                baseSellPrice: 3,
+                time: 50000,
+                clicks: 10,
+                buyPrice: 5,
+                baseSellPrice: 2,
                 description: 'Быстрорастущая, но дешёвая',
                 dropChance: 0.5
             },
@@ -2192,6 +2192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 
 
 
